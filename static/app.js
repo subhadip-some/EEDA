@@ -4,6 +4,10 @@ const state = {
     pageCount: 1,
     columns: [],
     numericColumns: [],
+    identifierColumns: [],
+    continuousColumns: [],
+    discreteColumns: [],
+    categoricalColumns: [],
     selectedRows: new Set(),
     selectedColumns: new Set(),
 };
@@ -76,6 +80,10 @@ function renderStats(data) {
         ["COLUMNS", formatNumber(data.column_count)],
         ["TOTAL MISSING VALUES", formatNumber(data.missing_count)],
         ["NUMERIC FEATURES", formatNumber(data.numeric_columns.length)],
+        ["IDENTIFIER-LIKE COLS", formatNumber((data.identifier_columns ?? []).length)],
+        ["CONTINUOUS COLS", formatNumber((data.continuous_columns ?? []).length)],
+        ["DISCRETE COLS", formatNumber((data.discrete_columns ?? []).length)],
+        ["CATEGORICAL COLS", formatNumber((data.categorical_columns ?? []).length)],
     ];
     const container = $("#stats");
     container.replaceChildren();
@@ -98,6 +106,10 @@ function renderTable(data) {
     state.pageCount = data.page_count;
     state.columns = data.columns;
     state.numericColumns = data.numeric_columns;
+    state.identifierColumns = data.identifier_columns ?? [];
+    state.continuousColumns = data.continuous_columns ?? [];
+    state.discreteColumns = data.discrete_columns ?? [];
+    state.categoricalColumns = data.categorical_columns ?? [];
     renderStats(data);
     renderFeatures(data.columns);
     $("#table-count").textContent = `${formatNumber(data.row_count)} rows`;
@@ -197,6 +209,10 @@ function renderAnalysis(data) {
         { label: "TOTAL MISSING VALUES", value: data.missing_count ?? 0, kind: data.missing_count > 0 ? "warn" : "ok" },
         { label: "NUMERIC COLS", value: (data.numeric_columns ?? []).length, kind: "ok" },
         { label: "INTEGER COLS", value: (data.integer_columns ?? []).length, kind: "ok" },
+        { label: "IDENTIFIER COLS", value: (data.identifier_columns ?? []).length, kind: "ok" },
+        { label: "CONTINUOUS COLS", value: (data.continuous_columns ?? []).length, kind: "ok" },
+        { label: "DISCRETE COLS", value: (data.discrete_columns ?? []).length, kind: "ok" },
+        { label: "CATEGORICAL COLS", value: (data.categorical_columns ?? []).length, kind: "ok" },
     ];
 
     stats.forEach(({ label, value, kind }) => {
@@ -217,36 +233,74 @@ function renderAnalysis(data) {
 }
 
 function renderColumnTypes(data) {
-    const list = $("#column-type-list");
-    list.replaceChildren();
+    const numericList = $("#numeric-columns-list");
+    const categoricalList = $("#categorical-columns-list");
+    numericList.replaceChildren();
+    categoricalList.replaceChildren();
 
-    const numeric = (data.numeric_columns ?? []).map(name => ({
-        name,
-        type: "numeric",
-        count: null,
+    const continuous = (data.continuous_columns ?? []).map(name => ({
+        name, type: "continuous",
     }));
-    const integer = (data.integer_columns ?? []).map(name => ({
-        name,
-        type: "integer",
-        count: null,
+    const discrete = (data.discrete_columns ?? []).map(name => ({
+        name, type: "discrete",
+    }));
+    const identifier = (data.identifier_columns ?? []).map(name => ({
+        name, type: "identifier",
     }));
 
-    [...numeric, ...integer].forEach(({ name, type }) => {
-        const chip = document.createElement("span");
-        chip.className = `column-chip ${type}`;
-        chip.title = name;
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "chip-name";
-        nameSpan.textContent = name;
-        chip.append(nameSpan);
-        list.append(chip);
-    });
+    function renderGroup(list, title, items, emptyText, chipType) {
+        const section = document.createElement("div");
+        section.className = "column-type-group";
 
-    if (list.children.length === 0) {
+        const heading = document.createElement("div");
+        heading.className = "column-type-heading";
+        heading.textContent = title;
+        section.append(heading);
+
+        const chips = document.createElement("div");
+        chips.className = "column-chips";
+
+        if (items.length === 0) {
+            const empty = document.createElement("span");
+            empty.className = "column-chip " + chipType;
+            empty.textContent = emptyText;
+            chips.append(empty);
+        } else {
+            items.forEach(({ name, type }) => {
+                const chip = document.createElement("span");
+                chip.className = `column-chip ${type}`;
+                chip.title = name;
+                const nameSpan = document.createElement("span");
+                nameSpan.className = "chip-name";
+                nameSpan.textContent = name;
+                chip.append(nameSpan);
+                chips.append(chip);
+            });
+        }
+
+        section.append(chips);
+        list.append(section);
+    }
+
+    renderGroup(numericList, "Continuous (measurements, decimals, time)", continuous,
+        "No continuous columns detected.", "continuous");
+    renderGroup(numericList, "Discrete (counts, quantities, headcounts)", discrete,
+        "No discrete columns detected.", "discrete");
+    renderGroup(numericList, "Identifier-like (IDs, zip/postal codes)", identifier,
+        "No identifier-like columns detected.", "identifier");
+
+    const categorical = (data.categorical_columns ?? []).map(name => ({
+        name, type: "categorical",
+    }));
+    renderGroup(categoricalList, "Categorical (text, labels, categories)", categorical,
+        "No categorical columns detected.", "categorical");
+
+    const allEmpty = numericList.children.length === 0 && categoricalList.children.length === 0;
+    if (allEmpty) {
         const empty = document.createElement("span");
         empty.className = "column-chip numeric";
-        empty.textContent = "No numeric or integer columns detected.";
-        list.append(empty);
+        empty.textContent = "No columns detected.";
+        numericList.append(empty);
     }
 }
 

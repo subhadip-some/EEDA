@@ -963,8 +963,8 @@ input[type="checkbox"] {
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 12px;
-    padding: 0 16px 16px 16px;
-    border-bottom: 1px solid #e9ebee;
+    padding: 12px 16px 14px;
+    border-top: 1px solid #f3f4f6;
 }
 
 .legend-item {
@@ -990,6 +990,10 @@ input[type="checkbox"] {
 .legend-dot.missing { background: #fdd3d3; box-shadow: 0 0 0 1.5px #f1a9a9 inset; }
 .legend-dot.numeric { background: #e3dfff; box-shadow: 0 0 0 1.5px #c7b7f5 inset; }
 .legend-dot.integer { background: #d2f0e6; box-shadow: 0 0 0 1.5px #b3dccd inset; }
+.legend-dot.identifier { background: #e2e8f0; box-shadow: 0 0 0 1.5px #cbd5e1 inset; }
+.legend-dot.continuous { background: #dbeafe; box-shadow: 0 0 0 1.5px #bfdbfe inset; }
+.legend-dot.discrete { background: #fef3c7; box-shadow: 0 0 0 1.5px #fde68a inset; }
+.legend-dot.categorical { background: #f3f4f6; box-shadow: 0 0 0 1.5px #d1d5db inset; }
 .legend-dot.ok { background: #d3ecde; box-shadow: 0 0 0 1.5px #aed8bd inset; }
 
 .column-chip {
@@ -1014,6 +1018,74 @@ input[type="checkbox"] {
     background: #d2f0e6;
     color: #157056;
     border: 1px solid #b3dccd;
+}
+
+.column-chip.identifier {
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.column-chip.continuous {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.column-chip.discrete {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.column-chip.categorical {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.column-types-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.column-type-group {
+    border: 1px solid #e9ebee;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: #fff;
+}
+
+.column-type-heading {
+    color: #6b7280;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.column-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.column-chip .chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+.column-chip .chip-count {
+    font-size: 9px;
+    opacity: .75;
+    margin-left: 4px;
 }
 
 .column-chip.dup {
@@ -1267,5 +1339,11 @@ input[type="checkbox"] {
 
     .plot-button {
         align-self: start;
+    }
+}
+
+@media (max-width: 680px) {
+    .column-types-grid {
+        grid-template-columns: 1fr;
     }
 }

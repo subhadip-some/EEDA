@@ -20,6 +20,11 @@ rows_per_page = 20
 datasets = {}
 original_files = {}
 
+IDENTIFIER_KEYWORDS = (
+    "zip", "postal", "postcode", "pin code", "pincode",
+    "id", "identifier", "code", "no.", "number", "key",
+)
+
 def error_response(message,status = 404):
     return jsonify({"error":message}),status
 
@@ -41,6 +46,74 @@ def make_json_value(value):
     return value
 
 
+def looks_like_identifier(name, series):
+    """Heuristic: a numeric-looking column that probably holds a categorical
+    identifier (zip/postal code, ID, code, key) rather than a real measurement."""
+    lower = str(name).lower()
+    if any(keyword in lower for keyword in IDENTIFIER_KEYWORDS):
+        return True
+    non_null = series.dropna()
+    if len(non_null) == 0:
+        return False
+    if (
+        len(non_null) >= 10
+        and pd.api.types.is_integer_dtype(series)
+        and non_null.nunique() == len(non_null)
+    ):
+        return True
+    return False
+
+
+def detect_identifier_columns(frame):
+    numeric = frame.select_dtypes(include="number")
+    return [str(column) for column in numeric.columns
+            if looks_like_identifier(column, numeric[column])]
+
+
+def classify_numeric_column(series):
+    """Classify a numeric column as 'continuous', 'discrete', or None.
+
+    Continuous: measurements with decimals, time, high-cardinality floats.
+    Discrete: integer counts (headcounts, quantities), low-cardinality numerics.
+    """
+    non_null = series.dropna()
+    if len(non_null) == 0:
+        return None
+
+    if pd.api.types.is_float_dtype(series):
+        sample = non_null.head(min(1000, len(non_null)))
+        has_decimals = any(float(value) % 1 != 0 for value in sample)
+        if has_decimals:
+            return "continuous"
+        # Whole numbers stored as float: high cardinality -> measurement
+        if len(non_null) >= 10 and non_null.nunique() / len(non_null) > 0.5:
+            return "continuous"
+        return "discrete"
+
+    if pd.api.types.is_integer_dtype(series):
+        return "discrete"
+
+    return None
+
+
+def detect_continuous_columns(frame):
+    numeric = frame.select_dtypes(include="number")
+    return [str(column) for column in numeric.columns
+            if classify_numeric_column(numeric[column]) == "continuous"]
+
+
+def detect_discrete_columns(frame):
+    numeric = frame.select_dtypes(include="number")
+    return [str(column) for column in numeric.columns
+            if classify_numeric_column(numeric[column]) == "discrete"]
+
+
+def detect_categorical_columns(frame):
+    numeric = frame.select_dtypes(include="number")
+    return [str(column) for column in frame.columns
+            if column not in numeric.columns]
+
+
 def make_dataset_response(dataset_id,frame,page=0):
     page_count = max(1,(len(frame) + rows_per_page-1) // rows_per_page)
     page = min(max(page,0),page_count -1)
@@ -56,6 +129,10 @@ def make_dataset_response(dataset_id,frame,page=0):
 
     numeric_columns = frame.select_dtypes(include = "number").columns.tolist()
     integer_columns = frame.select_dtypes(include = "integer").columns.tolist()
+    identifier_columns = detect_identifier_columns(frame)
+    continuous_columns = detect_continuous_columns(frame)
+    discrete_columns = detect_discrete_columns(frame)
+    categorical_columns = detect_categorical_columns(frame)
     missing_per_column = {
         str(column): int(count)
         for column, count in frame.isna().sum().items()
@@ -68,6 +145,10 @@ def make_dataset_response(dataset_id,frame,page=0):
         "column_statistics": data_describe(frame),
         "numeric_columns": [str(column) for column in numeric_columns],
         "integer_columns": [str(column) for column in integer_columns],
+        "identifier_columns": [str(column) for column in identifier_columns],
+        "continuous_columns": [str(column) for column in continuous_columns],
+        "discrete_columns": [str(column) for column in discrete_columns],
+        "categorical_columns": [str(column) for column in categorical_columns],
         "rows": rows,
         "row_count" : len(frame),
         "column_count":len(frame.columns),
@@ -81,13 +162,25 @@ def make_dataset_response(dataset_id,frame,page=0):
 
 def data_describe(frame):
     numeric_columns = set(frame.select_dtypes(include="number").columns)
+    identifier_columns = set(detect_identifier_columns(frame))
+    continuous_columns = set(detect_continuous_columns(frame))
+    discrete_columns = set(detect_discrete_columns(frame))
+    categorical_columns = set(detect_categorical_columns(frame))
     statistics = []
     for column in frame.columns:
         values = frame[column]
         is_numeric = column in numeric_columns
+        is_identifier = column in identifier_columns
+        is_continuous = column in continuous_columns
+        is_discrete = column in discrete_columns
+        is_categorical = column in categorical_columns
         modes = values.mode(dropna=True).tolist()
         statistics.append({
             "column": str(column),
+            "is_identifier": is_identifier,
+            "is_continuous": is_continuous,
+            "is_discrete": is_discrete,
+            "is_categorical": is_categorical,
             "mean": make_json_value(values.mean()) if is_numeric else None,
             "median": make_json_value(values.median()) if is_numeric else None,
             "mode": [make_json_value(value) for value in modes],

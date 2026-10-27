@@ -17,6 +17,10 @@ math, and interpreting what the data shows.
 - **Load a dataset:** Upload a CSV file up to 16 MB.
 - **Review the data:** Browse the table, move between pages, and see dataset
   size, column types, missing values, duplicate rows, and column statistics.
+- **Spot identifier-like columns:** See which numeric-looking columns
+  (zip/postal codes, IDs, codes) are flagged as categorical identifiers rather
+  than real measurements.
+- **Classify columns by type:** Numeric columns are split into continuous (measurements, decimals, time), discrete (counts, quantities, headcounts), and identifier-like (IDs, zip/postal codes). Categorical columns (text, labels, categories) are shown in a separate box.
 - **Choose features:** Keep selected columns or remove selected columns from
   the working dataset.
 - **Explore visually:** Create a histogram with a KDE curve, violin plot, box
@@ -110,6 +114,14 @@ was collected.
 - The app reads the CSV on upload and exports the current working dataset as
   UTF-8 CSV when you download it. The original file on your computer is not
   changed.
+- Identifier-like detection is a heuristic: a numeric column is flagged when its
+  name mentions zip/postal/postcode, id, code, number, or key, or when it is an
+  all-unique integer column. It is a suggestion, not a guarantee — you decide
+  how to treat each column.
+- Continuous / discrete classification uses column dtype and value patterns:
+  float columns with fractional parts are continuous; integer columns and
+  low-cardinality whole-number columns are discrete. High-cardinality float
+  columns without decimals are treated as continuous measurements.
 
 ## Built with
 

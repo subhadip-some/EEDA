@@ -155,25 +155,41 @@
               <h2>What the data looks like</h2>
               <p class="section-description">Duplicates, missing values, and column types at a glance.</p>
             </div>
+          </div>
+
+          <div class="stats-grid" id="analysis-stats"></div>
+
+          <div class="feature-card" id="analysis-legend-card">
+            <div class="feature-heading">
+              <div>
+                <div class="table-title"><span class="table-spark">✳</span><strong>Color codes</strong></div>
+                <p class="section-description">Column type and data quality color key used throughout this panel.</p>
+              </div>
+            </div>
             <div class="color-legend">
               <span class="legend-item"><span class="legend-dot dup"></span>Duplicates</span>
               <span class="legend-item"><span class="legend-dot missing"></span>Missing values</span>
               <span class="legend-item"><span class="legend-dot numeric"></span>Numeric columns</span>
               <span class="legend-item"><span class="legend-dot integer"></span>Integer columns</span>
+              <span class="legend-item"><span class="legend-dot identifier"></span>Identifier-like (numeric code)</span>
+              <span class="legend-item"><span class="legend-dot continuous"></span>Continuous (measurements)</span>
+              <span class="legend-item"><span class="legend-dot discrete"></span>Discrete (counts)</span>
+              <span class="legend-item"><span class="legend-dot categorical"></span>Categorical (text)</span>
               <span class="legend-item"><span class="legend-dot ok"></span>Clean / OK</span>
             </div>
           </div>
-
-          <div class="stats-grid" id="analysis-stats"></div>
 
           <div class="feature-card" id="analysis-columns-card">
             <div class="feature-heading">
               <div>
                 <div class="table-title"><span class="table-spark">✳</span><strong>Column types</strong></div>
-                <p class="section-description">Numeric and integer columns detected in your dataset.</p>
+                <p class="section-description">Numeric columns grouped by type, and categorical columns listed separately.</p>
               </div>
             </div>
-            <div class="feature-list" id="column-type-list" aria-label="Column types"></div>
+            <div class="column-types-grid">
+              <div class="feature-list" id="numeric-columns-list" aria-label="Numeric columns"></div>
+              <div class="feature-list" id="categorical-columns-list" aria-label="Categorical columns"></div>
+            </div>
           </div>
 
           <div class="feature-card" id="analysis-issues-card">
