@@ -179,6 +179,42 @@
             </div>
           </div>
 
+          <div class="data-quality-layout">
+            <div class="feature-card" id="missing-values-card">
+              <div class="feature-heading">
+                <div>
+                  <div class="table-title"><span class="table-spark">✳</span><strong>Handle missing values</strong></div>
+                  <p class="section-description">Choose a column and an action, then apply it to the working dataset.</p>
+                </div>
+              </div>
+              <div class="missing-value-controls">
+                <label class="control-field">
+                  <span>COLUMN</span>
+                  <select id="missing-column"></select>
+                </label>
+                <label class="control-field">
+                  <span>ACTION</span>
+                  <select id="missing-action"></select>
+                </label>
+                <label class="control-field" id="missing-constant-field" hidden>
+                  <span>CONSTANT VALUE</span>
+                  <input id="missing-constant" type="text" placeholder="Enter value">
+                </label>
+                <button class="button button-primary" id="apply-missing-value" type="button">Apply action</button>
+              </div>
+            </div>
+
+            <div class="feature-card" id="analysis-issues-card">
+              <div class="feature-heading">
+                <div>
+                  <div class="table-title"><span class="table-spark">✳</span><strong>Data quality</strong></div>
+                  <p class="section-description">Duplicate rows and columns with missing values.</p>
+                </div>
+              </div>
+              <div class="feature-list" id="data-quality-list" aria-label="Data quality issues"></div>
+            </div>
+          </div>
+
           <div class="feature-card" id="analysis-columns-card">
             <div class="feature-heading">
               <div>
@@ -192,15 +228,6 @@
             </div>
           </div>
 
-          <div class="feature-card" id="analysis-issues-card">
-            <div class="feature-heading">
-              <div>
-                <div class="table-title"><span class="table-spark">✳</span><strong>Data quality</strong></div>
-                <p class="section-description">Duplicate rows and columns with missing values.</p>
-              </div>
-            </div>
-            <div class="feature-list" id="data-quality-list" aria-label="Data quality issues"></div>
-          </div>
         </section>
 
         <section class="visualization" id="chart-panel" hidden>

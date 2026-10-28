@@ -823,6 +823,32 @@ input[type="checkbox"] {
     font-size: 8px;
 }
 
+.data-quality-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.data-quality-layout>.feature-card {
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.missing-value-controls {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.missing-value-controls .button {
+    height: 34px;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.control-field input,
 .control-field select {
     width: 100%;
     height: 34px;
@@ -1168,6 +1194,14 @@ input[type="checkbox"] {
 }
 
 @media (max-width: 920px) {
+    .data-quality-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .missing-value-controls {
+        flex-wrap: wrap;
+    }
+
     .sidebar {
         width: 205px;
         padding-right: 15px;

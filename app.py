@@ -192,6 +192,96 @@ def data_describe(frame):
         })
     return statistics
 
+@app.post("/api/missing-values")
+def handling_missing_values():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON missing-value request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    column = data.get("column")
+    action = data.get("action")
+    if not isinstance(column, str) or column not in frame.columns:
+        return error_response("Choose a valid column.")
+    if frame[column].isna().sum() == 0:
+        return error_response("This column has no missing values to handle.")
+
+    is_numeric = pd.api.types.is_numeric_dtype(frame[column])
+    valid_actions = ("mean", "median", "mode", "constant", "remove_rows") if is_numeric else ("mode", "constant", "remove_rows")
+    if action not in valid_actions:
+        return error_response("Choose a valid action for this column type.")
+
+    updated_frame = frame.copy()
+    missing_count = int(updated_frame[column].isna().sum())
+
+    if action == "remove_rows":
+        updated_frame = updated_frame.loc[updated_frame[column].notna()].copy()
+    else:
+        if action == "mean":
+            replacement = pd.to_numeric(updated_frame[column], errors="coerce").mean()
+        elif action == "median":
+            replacement = pd.to_numeric(updated_frame[column], errors="coerce").median()
+        elif action == "mode":
+            modes = updated_frame[column].mode(dropna=True)
+            if modes.empty:
+                return error_response("The column has no non-missing value to use as its mode.")
+            replacement = modes.iloc[0]
+        else:
+            constant = data.get("constant")
+            if constant is None or (isinstance(constant, str) and constant.strip() == ""):
+                return error_response("Enter a constant value.")
+            if is_numeric:
+                try:
+                    replacement = float(constant)
+                    if not math.isfinite(replacement):
+                        raise ValueError
+                except (TypeError, ValueError):
+                    return error_response("The constant must be a valid number for this numeric column.")
+            else:
+                replacement = str(constant)
+
+        if pd.isna(replacement):
+            return error_response("There is no valid replacement value for this column.")
+        updated_frame[column] = updated_frame[column].fillna(replacement)
+
+    datasets[dataset_id] = updated_frame
+    response = make_dataset_response(dataset_id, updated_frame)
+    response["message"] = f"Handled {missing_count} missing value{'s' if missing_count != 1 else ''} in {column}."
+    return jsonify(response)
+
+# @app.post("/api.duplicate-values")
+# def handling_duplicate_values():
+#     data = request.get_json(silent = True)
+
+#     if not isinstance(data,dict):
+#         return error_response("A JSON duplicate value request is required")
+
+#     dataset_id = data.get("dataset_id")
+#     frame = find_dataset(dataset_id)
+
+#     if frame is None:
+#         return error_response("Dataset not found, upload it again and continue",404)
+
+#     column = data.get("column")
+#     action = data.get("action")
+#     updated_frame = frame.copy()
+#     duplicate_counts = int(updated_frame[column].duplicated().sum())
+
+#     if action == "keep_duplicates":
+#         #keep first occurence
+#     else:
+#         #ewmove duplicate
+
+
+#     datasets[dataset_id] = updated_frame
+#     response = make_dataset_response(dataset_id, updated_frame)
+#     response["message"] = f"Handled {missing_count} missing value{'s' if missing_count != 1 else ''} in {column}."
+#     return jsonify(response)
+    
 
 @app.get("/")
 def home():

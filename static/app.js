@@ -78,12 +78,8 @@ function renderStats(data) {
     const stats = [
         ["ROWS", formatNumber(data.row_count)],
         ["COLUMNS", formatNumber(data.column_count)],
-        ["TOTAL MISSING VALUES", formatNumber(data.missing_count)],
         ["NUMERIC FEATURES", formatNumber(data.numeric_columns.length)],
-        ["IDENTIFIER-LIKE COLS", formatNumber((data.identifier_columns ?? []).length)],
-        ["CONTINUOUS COLS", formatNumber((data.continuous_columns ?? []).length)],
-        ["DISCRETE COLS", formatNumber((data.discrete_columns ?? []).length)],
-        ["CATEGORICAL COLS", formatNumber((data.categorical_columns ?? []).length)],
+        ["CATEGORICAL FEATURES", formatNumber((data.categorical_columns ?? []).length)],
     ];
     const container = $("#stats");
     container.replaceChildren();
@@ -230,6 +226,88 @@ function renderAnalysis(data) {
 
     renderColumnTypes(data);
     renderDataQuality(data);
+    renderMissingValueControls(data);
+}
+
+function renderMissingValueControls(data) {
+    const columnSelect = $("#missing-column");
+    const actionSelect = $("#missing-action");
+    if (!columnSelect || !actionSelect) return;
+
+    const previousColumn = columnSelect.value;
+    const missing = data.missing_per_column ?? {};
+    const columns = Object.keys(missing);
+    columnSelect.replaceChildren();
+
+    if (columns.length === 0) {
+        const option = document.createElement("option");
+        option.textContent = "No missing values";
+        option.value = "";
+        columnSelect.append(option);
+    } else {
+        columns.forEach((column) => {
+            const option = document.createElement("option");
+            option.value = column;
+            option.textContent = `${column} (${formatNumber(missing[column])} missing)`;
+            columnSelect.append(option);
+        });
+        if (columns.includes(previousColumn)) columnSelect.value = previousColumn;
+    }
+
+    $("#apply-missing-value").disabled = columns.length === 0;
+    updateMissingActions();
+}
+
+function updateMissingActions() {
+    const column = $("#missing-column").value;
+    const actionSelect = $("#missing-action");
+    const previousAction = actionSelect.value;
+    const isNumeric = state.numericColumns.includes(column);
+    actionSelect.replaceChildren();
+
+    const actions = isNumeric
+        ? [["mean", "Mean"], ["median", "Median"], ["mode", "Mode"], ["constant", "Constant"], ["remove_rows", "Remove rows"]]
+        : [["mode", "Mode"], ["constant", "Constant"], ["remove_rows", "Remove rows"]];
+
+    actions.forEach(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        actionSelect.append(option);
+    });
+    if (actions.some(([value]) => value === previousAction)) actionSelect.value = previousAction;
+    updateMissingConstantField();
+}
+
+function updateMissingConstantField() {
+    const constantField = $("#missing-constant-field");
+    constantField.hidden = $("#missing-action").value !== "constant";
+}
+
+async function applyMissingValueAction() {
+    if (!state.datasetId) return;
+    const column = $("#missing-column").value;
+    const action = $("#missing-action").value;
+    if (!column) return;
+
+    clearMessage();
+    try {
+        const data = await api("/api/missing-values", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                dataset_id: state.datasetId,
+                column,
+                action,
+                constant: $("#missing-constant").value,
+            }),
+        });
+        $("#missing-constant").value = "";
+        renderTable(data);
+        showMessage(data.message || "Missing values handled.", "success");
+    } catch (error) {
+        showMessage(error.message);
+    }
 }
 
 function renderColumnTypes(data) {
@@ -579,5 +657,8 @@ $("#delete-rows").addEventListener("click", () => changeRows("delete"));
 $("#keep-rows").addEventListener("click", () => changeRows("keep"));
 $("#remove-columns").addEventListener("click", () => changeColumns("delete"));
 $("#keep-columns").addEventListener("click", () => changeColumns("keep"));
+$("#missing-column").addEventListener("change", updateMissingActions);
+$("#missing-action").addEventListener("change", updateMissingConstantField);
+$("#apply-missing-value").addEventListener("click", applyMissingValueAction);
 $("#chart-type").addEventListener("change", updateChartControls);
 $("#plot-button").addEventListener("click", createChart);
