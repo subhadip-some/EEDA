@@ -23,7 +23,8 @@ math, and interpreting what the data shows.
 - **Classify columns by type:** Numeric columns are split into continuous (measurements, decimals, time), discrete (counts, quantities, headcounts), and identifier-like (IDs, zip/postal codes). Categorical columns (text, labels, categories) are shown in a separate box.
 - **Choose features:** Keep selected columns or remove selected columns from
   the working dataset.
-- **Handle missing values:** handle missing values based on numeric column and categorical column
+- **Handle missing values:** handle missing values based on numeric column
+ and categorical column.
 - **Explore visually:** Create a histogram with a KDE curve, violin plot, box
   plot, count plot, scatter plot, or correlation heatmap.
 - **Save your work:** Download the current working dataset as a CSV.
