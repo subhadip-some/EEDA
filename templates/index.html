@@ -31,6 +31,17 @@
         </div>
       </nav>
 
+      <div class="action-log-panel" aria-label="User action history">
+        <div class="action-log-heading">
+          <span>ACTIVITY</span>
+          <button id="clear-action-log" type="button" aria-label="Clear action history">Clear</button>
+        </div>
+        <div id="action-log-list" class="action-log-list">
+          <span class="action-log-empty">No actions yet</span>
+        </div>
+        <button id="undo-last-action" class="button action-undo-button" type="button" disabled>↶ Undo last action</button>
+      </div>
+
       <div class="sidebar-bottom">
         <div class="privacy-note"><span class="privacy-icon">↗</span><span>Your data stays in this app session and is never saved to disk.</span></div>
         <div class="version-label">EEDA <span>·</span> EASY EDA</div>

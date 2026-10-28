@@ -10,10 +10,50 @@ const state = {
     categoricalColumns: [],
     selectedRows: new Set(),
     selectedColumns: new Set(),
+    actions: [],
 };
 
 const $ = (selector) => document.querySelector(selector);
 const alertBox = $("#alert");
+
+function trackAction(message, kind = "info") {
+    state.actions.unshift({
+        message,
+        kind,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    });
+    renderActionLog();
+}
+
+function renderActionLog() {
+    const list = $("#action-log-list");
+    if (!list) return;
+    list.replaceChildren();
+
+    if (state.actions.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "action-log-empty";
+        empty.textContent = "No actions yet";
+        list.append(empty);
+        return;
+    }
+
+    state.actions.slice(0, 30).forEach((entry) => {
+        const item = document.createElement("div");
+        item.className = `action-log-item ${entry.kind}`;
+        const dot = document.createElement("span");
+        dot.className = "action-log-dot";
+        const copy = document.createElement("div");
+        const message = document.createElement("span");
+        message.className = "action-log-message";
+        message.textContent = entry.message;
+        const time = document.createElement("time");
+        time.textContent = entry.time;
+        copy.append(message, time);
+        item.append(dot, copy);
+        list.append(item);
+    });
+}
 
 async function api(url, options = {}) {
     const response = await fetch(url, options);
@@ -106,6 +146,12 @@ function renderTable(data) {
     state.continuousColumns = data.continuous_columns ?? [];
     state.discreteColumns = data.discrete_columns ?? [];
     state.categoricalColumns = data.categorical_columns ?? [];
+    const undoButton = $("#undo-last-action");
+    if (undoButton) {
+        const count = data.undo_count ?? 0;
+        undoButton.disabled = count === 0;
+        undoButton.textContent = count > 0 ? `↶ Undo last action (${count})` : "↶ Undo last action";
+    }
     renderStats(data);
     renderFeatures(data.columns);
     $("#table-count").textContent = `${formatNumber(data.row_count)} rows`;
@@ -304,6 +350,12 @@ async function applyMissingValueAction() {
         });
         $("#missing-constant").value = "";
         renderTable(data);
+        const description = action === "remove_rows"
+            ? `Removed rows with missing values in ${column}`
+            : action === "constant"
+                ? `Filled missing values in ${column} with constant value`
+                : `Filled missing values in ${column} using ${action}`;
+        trackAction(description, "success");
         showMessage(data.message || "Missing values handled.", "success");
     } catch (error) {
         showMessage(error.message);
@@ -517,6 +569,7 @@ async function uploadFile(file) {
         state.datasetId = data.dataset_id;
         state.selectedRows.clear();
         state.selectedColumns.clear();
+        state.actions = [];
         $("#data-panel").hidden = false;
         $("#analysis-panel").hidden = false;
         $("#chart-panel").hidden = false;
@@ -524,6 +577,7 @@ async function uploadFile(file) {
         updateChartControls();
         setStep("clean");
         $("#chart-result").innerHTML = '<div class="chart-empty"><div class="chart-empty-icon" aria-hidden="true">⌁</div><strong>Your next insight starts here</strong><span>Pick a chart and create a visualization.</span></div>';
+        trackAction(`Uploaded ${file.name} — ${formatNumber(data.row_count)} rows, ${formatNumber(data.column_count)} columns`, "info");
         showMessage(`Loaded ${formatNumber(data.row_count)} rows and ${formatNumber(data.column_count)} columns.`, "success");
     } catch (error) {
         showMessage(error.message);
@@ -550,6 +604,7 @@ async function downloadModifiedCSV() {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
+        trackAction("Downloaded the modified CSV", "info");
         showMessage("Modified CSV downloaded.", "success");
     } catch (error) {
         showMessage(error.message);
@@ -573,6 +628,7 @@ async function changeRows(action) {
         });
         state.selectedRows.clear();
         renderTable(data);
+        trackAction(action === "keep" ? `Kept ${ids.length} selected row${ids.length === 1 ? "" : "s"}` : `Deleted ${ids.length} selected row${ids.length === 1 ? "" : "s"}`, "success");
         showMessage(action === "keep" ? "Kept the selected rows." : "Deleted the selected rows.", "success");
     } catch (error) {
         showMessage(error.message);
@@ -596,6 +652,7 @@ async function changeColumns(action) {
         });
         state.selectedColumns.clear();
         renderTable(data);
+        trackAction(action === "keep" ? `Kept columns: ${columns.join(", ")}` : `Deleted columns: ${columns.join(", ")}`, "success");
         showMessage(action === "keep" ? "Kept the selected columns." : "Removed the selected columns.", "success");
     } catch (error) {
         showMessage(error.message);
@@ -635,6 +692,7 @@ async function createChart() {
             container.append(note);
         }
         setStep("visualize");
+        trackAction(`Created ${type} chart${payload.column ? ` for ${payload.column}` : ""}${payload.x && payload.y ? ` (${payload.x} vs ${payload.y})` : ""}`, "info");
     } catch (error) {
         showMessage(error.message);
     } finally {
@@ -647,6 +705,30 @@ $("#upload-form").addEventListener("submit", (event) => event.preventDefault());
 $("#file-input").addEventListener("change", (event) => uploadFile(event.target.files[0]));
 $("#replace-dataset").addEventListener("click", () => $("#file-input").click());
 $("#download-csv").addEventListener("click", downloadModifiedCSV);
+async function undoLastAction() {
+    if (!state.datasetId) return;
+    clearMessage();
+    try {
+        const data = await api("/api/undo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataset_id: state.datasetId }),
+        });
+        state.selectedRows.clear();
+        state.selectedColumns.clear();
+        renderTable(data);
+        trackAction(data.undone_action ? `Undid: ${data.undone_action}` : "Undid last action", "info");
+        showMessage(data.message || "Undid the last action.", "success");
+    } catch (error) {
+        showMessage(error.message);
+    }
+}
+
+$("#clear-action-log").addEventListener("click", () => {
+    state.actions = [];
+    renderActionLog();
+});
+$("#undo-last-action").addEventListener("click", undoLastAction);
 $("#previous-page").addEventListener("click", async () => {
     try { await loadPage(state.page - 1); } catch (error) { showMessage(error.message); }
 });

@@ -25,6 +25,8 @@ math, and interpreting what the data shows.
   the working dataset.
 - **Handle missing values:** handle missing values based on numeric column
  and categorical column.
+- **Track your actions:** It will track your every action, you can even undo your action, so that 
+you can experiment with the data.
 - **Explore visually:** Create a histogram with a KDE curve, violin plot, box
   plot, count plot, scatter plot, or correlation heatmap.
 - **Save your work:** Download the current working dataset as a CSV.

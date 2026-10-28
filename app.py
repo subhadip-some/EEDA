@@ -18,6 +18,7 @@ app.config["MAX_CONTENT_LENGTH"] = 16*1024*1024 #upload lim:16MB
 
 rows_per_page = 20
 datasets = {}
+undo_stacks = {}
 original_files = {}
 
 IDENTIFIER_KEYWORDS = (
@@ -158,6 +159,8 @@ def make_dataset_response(dataset_id,frame,page=0):
         "page":page,
         "page_count":page_count,
         "page_size": rows_per_page,
+        "undo_available": bool(undo_stacks.get(dataset_id)),
+        "undo_count": len(undo_stacks.get(dataset_id, [])),
     }
 
 def data_describe(frame):
@@ -191,6 +194,16 @@ def data_describe(frame):
             "skew": [make_json_value(values.skew() if is_numeric else None)],
         })
     return statistics
+
+
+def push_undo_action(dataset_id, description, before_frame):
+    if dataset_id not in undo_stacks:
+        undo_stacks[dataset_id] = []
+    undo_stacks[dataset_id].append({
+        "description": description,
+        "before": before_frame.copy(),
+    })
+
 
 @app.post("/api/missing-values")
 def handling_missing_values():
@@ -248,6 +261,13 @@ def handling_missing_values():
             return error_response("There is no valid replacement value for this column.")
         updated_frame[column] = updated_frame[column].fillna(replacement)
 
+    if action == "remove_rows":
+        description = f"Removed rows with missing values in {column}"
+    elif action == "constant":
+        description = f"Filled missing values in {column} with a constant"
+    else:
+        description = f"Filled missing values in {column} using {action}"
+    push_undo_action(dataset_id, description, frame)
     datasets[dataset_id] = updated_frame
     response = make_dataset_response(dataset_id, updated_frame)
     response["message"] = f"Handled {missing_count} missing value{'s' if missing_count != 1 else ''} in {column}."
@@ -309,6 +329,7 @@ def upload_csv():
 
     dataset_id = uuid.uuid4().hex
     datasets[dataset_id] = frame
+    undo_stacks[dataset_id] = []
     original_files[dataset_id] = (uploaded_file.filename, raw)
     return jsonify(make_dataset_response(dataset_id,frame))
 
@@ -381,8 +402,80 @@ def edit_columns():
         return error_response("This action would remove every column. Keep at least one feature.")
 
     updated_frame = frame[remaining_columns]
+    affected = sorted(selected_columns, key=str)
+    description = (
+        f"Kept columns: {', '.join(affected)}"
+        if action == "keep"
+        else f"Deleted columns: {', '.join(affected)}"
+    )
+    push_undo_action(dataset_id, description, frame)
     datasets[dataset_id] = updated_frame
     return jsonify(make_dataset_response(dataset_id, updated_frame))
+
+
+@app.post("/api/rows")
+def edit_rows():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON row request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    action = data.get("action")
+    row_ids = data.get("row_ids")
+    if action not in ("keep", "delete"):
+        return error_response("Choose either keep or delete as the row action.")
+    if not isinstance(row_ids, list) or not row_ids:
+        return error_response("Select at least one row first.")
+
+    try:
+        selected_ids = {int(row_id) for row_id in row_ids}
+    except (TypeError, ValueError):
+        return error_response("Selected row IDs are invalid.")
+
+    selected = frame.index.isin(selected_ids)
+    if not selected.any():
+        return error_response("The selected rows are not in this dataset.")
+
+    if action == "keep":
+        updated_frame = frame.loc[selected].copy()
+        description = f"Kept {selected.sum()} selected row{'s' if selected.sum() != 1 else ''}"
+    else:
+        updated_frame = frame.loc[~selected].copy()
+        description = f"Deleted {selected.sum()} selected row{'s' if selected.sum() != 1 else ''}"
+
+    if updated_frame.empty:
+        return error_response("This action would remove every row.")
+
+    push_undo_action(dataset_id, description, frame)
+    datasets[dataset_id] = updated_frame
+    return jsonify(make_dataset_response(dataset_id, updated_frame))
+
+
+@app.post("/api/undo")
+def undo_last_action():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON undo request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    stack = undo_stacks.get(dataset_id, [])
+    if not stack:
+        return error_response("There is no action to undo.", 409)
+
+    entry = stack.pop()
+    datasets[dataset_id] = entry["before"].copy()
+    response = make_dataset_response(dataset_id, datasets[dataset_id])
+    response["message"] = f"Undid: {entry['description']}"
+    response["undone_action"] = entry["description"]
+    return jsonify(response)
 
 
 def make_chart(frame, data):
