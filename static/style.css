@@ -942,6 +942,58 @@ input[type="checkbox"] {
     white-space: nowrap;
 }
 
+.outlier-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr)) minmax(140px, 0.8fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.outlier-controls .button {
+    height: 34px;
+    white-space: nowrap;
+}
+
+.outlier-result {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #edf0f4;
+}
+
+.outlier-summary {
+    color: #505766;
+    font-size: 13px;
+}
+
+.outlier-summary strong {
+    color: #20242c;
+}
+
+.outlier-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.outlier-chip {
+    display: inline-flex;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: #fff3ef;
+    color: #b85a44;
+    border: 1px solid #f1d3ca;
+    font-size: 12px;
+}
+
+.outlier-empty {
+    display: block;
+    margin-top: 8px;
+    color: #8a909d;
+    font-size: 12px;
+}
+
 .control-field input,
 .control-field select {
     width: 100%;
@@ -1296,6 +1348,10 @@ input[type="checkbox"] {
         flex-wrap: wrap;
     }
 
+    .outlier-controls {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+
     .sidebar {
         width: 205px;
         padding-right: 15px;
@@ -1332,6 +1388,10 @@ input[type="checkbox"] {
 @media (max-width: 680px) {
     body {
         min-width: 360px;
+    }
+
+    .outlier-controls {
+        grid-template-columns: 1fr;
     }
 
     .sidebar {

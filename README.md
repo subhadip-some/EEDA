@@ -29,6 +29,8 @@ math, and interpreting what the data shows.
 you can experiment with the data.
 - **Explore visually:** Create a histogram with a KDE curve, violin plot, box
   plot, count plot, scatter plot, or correlation heatmap.
+- **Detect Outliers:** user can detect outliers using Z-score and IQR Method 
+  and box plot will help.
 - **Save your work:** Download the current working dataset as a CSV.
 
 

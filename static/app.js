@@ -273,6 +273,96 @@ function renderAnalysis(data) {
     renderColumnTypes(data);
     renderDataQuality(data);
     renderMissingValueControls(data);
+    renderOutlierControls(data);
+}
+
+function renderOutlierControls(data) {
+    const columnSelect = $("#outlier-column");
+    if (!columnSelect) return;
+
+    const previous = columnSelect.value;
+    const identifiers = new Set(data.identifier_columns ?? []);
+    const usable = (data.numeric_columns ?? []).filter((column) => !identifiers.has(column));
+    columnSelect.replaceChildren();
+
+    if (usable.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No numeric columns available";
+        columnSelect.append(option);
+    } else {
+        usable.forEach((column) => {
+            const option = document.createElement("option");
+            option.value = column;
+            option.textContent = column;
+            columnSelect.append(option);
+        });
+        if (usable.includes(previous)) columnSelect.value = previous;
+    }
+    $("#detect-outliers").disabled = usable.length === 0;
+}
+
+function updateOutlierSettings() {
+    const isZscore = $("#outlier-method").value === "zscore";
+    $("#outlier-threshold-field").hidden = !isZscore;
+    $("#outlier-multiplier-field").hidden = isZscore;
+}
+
+async function detectOutliers() {
+    const column = $("#outlier-column").value;
+    if (!column) return;
+
+    const method = $("#outlier-method").value;
+    clearMessage();
+    try {
+        const result = await api("/api/outliers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                dataset_id: state.datasetId,
+                column,
+                method,
+                threshold: $("#outlier-threshold").value,
+                multiplier: $("#outlier-multiplier").value,
+            }),
+        });
+
+        const container = $("#outlier-result");
+        container.replaceChildren();
+        const summary = document.createElement("div");
+        summary.className = "outlier-summary";
+        const setting = method === "zscore"
+            ? `threshold ${formatNumber(result.settings.threshold)}`
+            : `IQR multiplier ${formatNumber(result.settings.multiplier)}`;
+        summary.innerHTML = `<strong>${formatNumber(result.outlier_count)}</strong> outlier${result.outlier_count === 1 ? "" : "s"} found in <strong>${result.column}</strong> using ${method === "zscore" ? "Z-score" : "IQR"} (${setting}).`;
+        container.append(summary);
+
+        if (result.outlier_count > 0) {
+            const list = document.createElement("div");
+            list.className = "outlier-list";
+            result.outliers.forEach((outlier) => {
+                const item = document.createElement("span");
+                item.className = "outlier-chip";
+                item.textContent = `Row ${outlier.row_number ?? outlier.row_id}: ${formatStatistic(outlier.value)}`;
+                list.append(item);
+            });
+            container.append(list);
+            if (result.truncated) {
+                const note = document.createElement("span");
+                note.className = "outlier-empty";
+                note.textContent = "Showing the first 100 outliers.";
+                container.append(note);
+            }
+        } else {
+            const empty = document.createElement("span");
+            empty.className = "outlier-empty";
+            empty.textContent = "No outliers detected with the current settings.";
+            container.append(empty);
+        }
+        trackAction(`Detected ${result.outlier_count} outlier${result.outlier_count === 1 ? "" : "s"} in ${column} using ${method === "zscore" ? "Z-score" : "IQR"}`, "info");
+    } catch (error) {
+        showMessage(error.message);
+    }
 }
 
 function renderMissingValueControls(data) {
@@ -553,7 +643,7 @@ function updateChartOptions() {
 
 function updateChartControls() {
     const type = $("#chart-type").value;
-    $("#field-primary").hidden = type === "heatmap";
+    $("#field-primary").hidden = type === "heatmap" || type === "box_all";
     $("#field-secondary").hidden = type !== "scatter";
     $("#primary-label").textContent = type === "scatter" ? "X AXIS" : "COLUMN";
     updateChartOptions();
@@ -742,5 +832,7 @@ $("#keep-columns").addEventListener("click", () => changeColumns("keep"));
 $("#missing-column").addEventListener("change", updateMissingActions);
 $("#missing-action").addEventListener("change", updateMissingConstantField);
 $("#apply-missing-value").addEventListener("click", applyMissingValueAction);
+$("#outlier-method").addEventListener("change", updateOutlierSettings);
+$("#detect-outliers").addEventListener("click", detectOutliers);
 $("#chart-type").addEventListener("change", updateChartControls);
 $("#plot-button").addEventListener("click", createChart);

@@ -226,6 +226,40 @@
             </div>
           </div>
 
+          <div class="feature-card" id="outlier-detection-card">
+            <div class="feature-heading">
+              <div>
+                <div class="table-title"><span class="table-spark">✳</span><strong>Outlier detection</strong></div>
+                <p class="section-description">Find unusual numeric values with Z-score or IQR detection.</p>
+              </div>
+            </div>
+            <div class="outlier-controls">
+              <label class="control-field">
+                <span>COLUMN</span>
+                <select id="outlier-column"></select>
+              </label>
+              <label class="control-field">
+                <span>METHOD</span>
+                <select id="outlier-method">
+                  <option value="zscore">Z-score</option>
+                  <option value="iqr">IQR</option>
+                </select>
+              </label>
+              <label class="control-field" id="outlier-threshold-field">
+                <span>Z-SCORE THRESHOLD</span>
+                <input id="outlier-threshold" type="number" value="3" min="0.1" step="0.1">
+              </label>
+              <label class="control-field" id="outlier-multiplier-field" hidden>
+                <span>IQR MULTIPLIER</span>
+                <input id="outlier-multiplier" type="number" value="1.5" min="0.1" step="0.1">
+              </label>
+              <button class="button button-primary" id="detect-outliers" type="button">Detect outliers</button>
+            </div>
+            <div id="outlier-result" class="outlier-result">
+              <span class="outlier-empty">Choose a numeric column and detection method.</span>
+            </div>
+          </div>
+
           <div class="feature-card" id="analysis-columns-card">
             <div class="feature-heading">
               <div>
@@ -257,7 +291,8 @@
                   <option value="histogram">Histogram + KDE</option>
                   <option value="violin">Violin plot</option>
                   <option value="count">Count plot</option>
-                  <option value="box">Box plot</option>
+                  <option value="box">Box plot (one column)</option>
+                  <option value="box_all">Box plot (all numeric columns)</option>
                   <option value="scatter">Scatter plot</option>
                   <option value="heatmap">Correlation heatmap</option>
                 </select>

@@ -7,6 +7,7 @@ import math
 import uuid
 import io
 import base64
+from scipy import stats
 from flask import Flask, render_template, jsonify, request, send_file
 
 #create chart images
@@ -113,6 +114,35 @@ def detect_categorical_columns(frame):
     numeric = frame.select_dtypes(include="number")
     return [str(column) for column in frame.columns
             if column not in numeric.columns]
+
+def detect_outliers_zscore(series, threshold=3.0):
+    values = pd.to_numeric(series, errors="coerce")
+    finite = values[np.isfinite(values)] if hasattr(values, "__len__") else values
+    if len(finite) == 0:
+        return pd.Series(False, index=series.index)
+
+    std = finite.std(ddof=0)
+    if not math.isfinite(float(std)) or float(std) == 0:
+        return pd.Series(False, index=series.index)
+
+    z_scores = np.abs(stats.zscore(finite.to_numpy(dtype=float), nan_policy="omit", ddof=0))
+    mask = pd.Series(False, index=series.index)
+    mask.loc[finite.index] = z_scores > threshold
+    return mask
+
+
+def detect_outliers_iqr(series, multiplier=1.5):
+    values = pd.to_numeric(series, errors="coerce")
+    finite = values[np.isfinite(values)]
+    if len(finite) == 0:
+        return pd.Series(False, index=series.index)
+
+    q1 = finite.quantile(0.25)
+    q3 = finite.quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - multiplier * iqr
+    upper_bound = q3 + multiplier * iqr
+    return (values < lower_bound) | (values > upper_bound)
 
 
 def make_dataset_response(dataset_id,frame,page=0):
@@ -455,6 +485,65 @@ def edit_rows():
     return jsonify(make_dataset_response(dataset_id, updated_frame))
 
 
+@app.post("/api/outliers")
+def detect_outliers():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON outlier request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    column = data.get("column")
+    method = data.get("method", "zscore")
+    if not isinstance(column, str) or column not in frame.columns:
+        return error_response("Choose a valid column.")
+    if not pd.api.types.is_numeric_dtype(frame[column]):
+        return error_response("Outlier detection is only available for numeric columns.")
+    if method not in ("zscore", "iqr"):
+        return error_response("Choose either zscore or iqr as the detection method.")
+
+    try:
+        if method == "zscore":
+            threshold = float(data.get("threshold", 3.0))
+            if not math.isfinite(threshold) or threshold <= 0:
+                raise ValueError
+            mask = detect_outliers_zscore(frame[column], threshold)
+            settings = {"threshold": threshold}
+        else:
+            multiplier = float(data.get("multiplier", 1.5))
+            if not math.isfinite(multiplier) or multiplier <= 0:
+                raise ValueError
+            mask = detect_outliers_iqr(frame[column], multiplier)
+            settings = {"multiplier": multiplier}
+    except (TypeError, ValueError):
+        return error_response("The method setting must be a positive number.")
+
+    numeric_values = pd.to_numeric(frame[column], errors="coerce")
+    outlier_indexes = frame.index[mask.fillna(False)].tolist()
+    outliers = []
+    for row_index in outlier_indexes[:100]:
+        value = numeric_values.loc[row_index]
+        outliers.append({
+            "row_id": int(row_index) if isinstance(row_index, (int, np.integer)) else str(row_index),
+            "row_number": frame.index.get_loc(row_index) + 1 if isinstance(row_index, (int, np.integer)) else None,
+            "value": make_json_value(value),
+        })
+
+    valid_count = int(numeric_values.notna().sum())
+    return jsonify({
+        "column": column,
+        "method": method,
+        "settings": settings,
+        "valid_count": valid_count,
+        "outlier_count": int(mask.fillna(False).sum()),
+        "outliers": outliers,
+        "truncated": int(mask.fillna(False).sum()) > 100,
+    })
+
+
 @app.post("/api/undo")
 def undo_last_action():
     data = request.get_json(silent=True)
@@ -480,6 +569,35 @@ def undo_last_action():
 
 def make_chart(frame, data):
     chart_type = data.get("type")
+
+    if chart_type == "box_all":
+        numeric_data = frame.select_dtypes(include="number").copy()
+        identifier_columns = set(detect_identifier_columns(frame))
+        numeric_data = numeric_data.drop(columns=list(identifier_columns), errors="ignore")
+
+        if numeric_data.shape[1] == 0:
+            raise ValueError("There are no numeric measurement columns to plot.")
+
+        plot_data = numeric_data.apply(pd.to_numeric, errors="coerce")
+        plot_data = plot_data.replace([np.inf, -np.inf], np.nan)
+        plot_data = plot_data.dropna(axis=1, how="all")
+        if plot_data.shape[1] == 0:
+            raise ValueError("There are no numeric values to plot.")
+
+        note = ""
+        if plot_data.shape[1] > 25:
+            plot_data = plot_data.iloc[:, :25]
+            note = "Showing the first 25 numeric measurement columns."
+
+        figure_width = max(8, min(20, plot_data.shape[1] * 0.75))
+        figure, axis = plt.subplots(figsize=(figure_width, 5.5))
+        sns.boxplot(data=plot_data, color="#d8d5ff", ax=axis)
+        axis.set_title("Box plots for all numeric columns")
+        axis.set_xlabel("Column")
+        axis.set_ylabel("Value")
+        axis.tick_params(axis="x", labelrotation=45)
+        figure.tight_layout()
+        return figure, note
 
     if chart_type in ("histogram", "violin", "box"):
         column = data.get("column")
@@ -584,7 +702,7 @@ def make_chart(frame, data):
         figure.tight_layout()
         return figure, note
 
-    raise ValueError("Choose histogram, violin, count, box, scatter, or heatmap.")
+    raise ValueError("Choose histogram, violin, count, box, box-all, scatter, or heatmap.")
 
 
 
