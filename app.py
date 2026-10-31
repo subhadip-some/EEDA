@@ -337,6 +337,20 @@ def handling_missing_values():
 def home():
     return render_template("index.html")
 
+@app.get("/guide.txt")
+def quick_guide():
+    return (
+        "EEDA Quick Guide\n"
+        "================\n"
+        "Upload a CSV, then choose a chart from the visualization panel.\n"
+        "Use the Chart guide toggle below the chart controls to see what each chart does.\n"
+        "Charts: Histogram + KDE, Violin, Box plot, Count plot, Scatter plot,\n"
+        "Relationship chart, Line graph, Correlation heatmap, Cross-tabulation,\n"
+        "Box plot (all numeric).\n",
+        200,
+        {"Content-Type": "text/plain; charset=utf-8"},
+    )
+
 @app.post("/api/upload")
 def upload_csv():
     uploaded_file = request.files.get("file")
@@ -657,7 +671,7 @@ def make_chart(frame, data):
         figure.tight_layout()
         return figure, note
 
-    if chart_type == "scatter":
+    if chart_type in ("scatter", "relationship"):
         x_column = data.get("x")
         y_column = data.get("y")
         if (
@@ -666,7 +680,7 @@ def make_chart(frame, data):
             or x_column not in frame.columns
             or y_column not in frame.columns
         ):
-            raise ValueError("Choose valid columns for the scatter plot.")
+            raise ValueError("Choose valid columns for the relationship plot.")
 
         points = pd.DataFrame({
             "x": pd.to_numeric(frame[x_column], errors="coerce"),
@@ -702,9 +716,139 @@ def make_chart(frame, data):
         figure.tight_layout()
         return figure, note
 
-    raise ValueError("Choose histogram, violin, count, box, box-all, scatter, or heatmap.")
+    if chart_type == "crosstab":
+        col1 = data.get("column1")
+        col2 = data.get("column2")
+        if not isinstance(col1, str) or not isinstance(col2, str):
+            raise ValueError("Choose two valid columns for cross-tabulation.")
+        if col1 not in frame.columns or col2 not in frame.columns:
+            raise ValueError("Choose valid columns for cross-tabulation.")
+        if col1 == col2:
+            raise ValueError("Choose two different columns for cross-tabulation.")
+
+        numeric_columns = frame.select_dtypes(include="number").columns.tolist()
+        if col1 in numeric_columns or col2 in numeric_columns:
+            raise ValueError("Cross-tabulation requires two categorical columns.")
+
+        ct = pd.crosstab(frame[col1], frame[col2])
+
+        note = ""
+        max_size = 15
+        if ct.shape[0] > max_size:
+            row_sums = ct.sum(axis=1).sort_values(ascending=False)
+            top_rows = row_sums.head(max_size).index
+            ct = ct.loc[top_rows]
+            note += f"Showing top {max_size} row categories by frequency. "
+
+        if ct.shape[1] > max_size:
+            col_sums = ct.sum(axis=0).sort_values(ascending=False)
+            top_cols = col_sums.head(max_size).index
+            ct = ct[top_cols]
+            note += f"Showing top {max_size} column categories by frequency."
+
+        n_rows, n_cols = ct.shape
+        fig_width = max(8, min(18, n_cols * 0.85))
+        fig_height = max(6, min(14, n_rows * 0.55))
+
+        figure, axis = plt.subplots(figsize=(fig_width, fig_height))
+        sns.heatmap(ct, annot=True, fmt="d", cmap="YlGnBu", ax=axis,
+                    cbar_kws={"label": "Count"})
+        axis.set_title(f"Cross-tabulation: {col1} vs {col2}")
+        axis.set_xlabel(col2)
+        axis.set_ylabel(col1)
+        axis.tick_params(axis="x", labelrotation=45)
+        axis.tick_params(axis="y", labelrotation=0)
+        figure.tight_layout()
+        return figure, note
+
+    if chart_type == "line":
+        x_column = data.get("x")
+        y1_column = data.get("y1")
+        y2_column = data.get("y2")
+        if (
+            not isinstance(x_column, str)
+            or not isinstance(y1_column, str)
+            or not isinstance(y2_column, str)
+            or x_column not in frame.columns
+            or y1_column not in frame.columns
+            or y2_column not in frame.columns
+        ):
+            raise ValueError("Choose valid columns for the line graph.")
+        if len({x_column, y1_column, y2_column}) < 3:
+            raise ValueError("Choose three different columns for the line graph.")
+
+        plot_data = pd.DataFrame({
+            "x": pd.to_numeric(frame[x_column], errors="coerce"),
+            "y1": pd.to_numeric(frame[y1_column], errors="coerce"),
+            "y2": pd.to_numeric(frame[y2_column], errors="coerce"),
+        }).dropna()
+        plot_data = plot_data[np.isfinite(plot_data).all(axis=1)]
+        if plot_data.empty:
+            raise ValueError("These columns have no numeric rows in common.")
+        plot_data = plot_data.sort_values("x")
+        if len(plot_data) > 10_000:
+            plot_data = plot_data.iloc[np.linspace(0, len(plot_data) - 1, 10_000, dtype=int)]
+
+        figure, axis = plt.subplots(figsize=(8, 4.5))
+        axis.plot(plot_data["x"], plot_data["y1"], label=y1_column, color="#6258e8", alpha=0.85)
+        axis.plot(plot_data["x"], plot_data["y2"], label=y2_column, color="#f08c52", alpha=0.85)
+        axis.set(title=f"{y1_column} and {y2_column} over {x_column}", xlabel=x_column, ylabel="Value")
+        axis.legend()
+        axis.grid(alpha=0.2)
+        figure.tight_layout()
+        return figure, ""
+
+    raise ValueError("Choose histogram, violin, count, box, box-all, scatter, relationship, heatmap, crosstab, or line.")
 
 
+@app.post("/api/crosstab")
+def get_crosstab():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON crosstab request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    col1 = data.get("column1")
+    col2 = data.get("column2")
+    if not isinstance(col1, str) or not isinstance(col2, str):
+        return error_response("Choose two valid columns for cross-tabulation.")
+    if col1 not in frame.columns or col2 not in frame.columns:
+        return error_response("Choose valid columns for cross-tabulation.")
+    if col1 == col2:
+        return error_response("Choose two different columns for cross-tabulation.")
+
+    numeric_columns = frame.select_dtypes(include="number").columns.tolist()
+    if col1 in numeric_columns or col2 in numeric_columns:
+        return error_response("Cross-tabulation requires two categorical columns.")
+
+    ct = pd.crosstab(frame[col1], frame[col2])
+
+    note = ""
+    max_size = 15
+    if ct.shape[0] > max_size:
+        row_sums = ct.sum(axis=1).sort_values(ascending=False)
+        top_rows = row_sums.head(max_size).index
+        ct = ct.loc[top_rows]
+        note += f"Showing top {max_size} row categories by frequency. "
+
+    if ct.shape[1] > max_size:
+        col_sums = ct.sum(axis=0).sort_values(ascending=False)
+        top_cols = col_sums.head(max_size).index
+        ct = ct[top_cols]
+        note += f"Showing top {max_size} column categories by frequency."
+
+    return jsonify({
+        "column1": col1,
+        "column2": col2,
+        "row_labels": [str(v) for v in ct.index.tolist()],
+        "col_labels": [str(v) for v in ct.columns.tolist()],
+        "data": [[int(v) for v in row] for row in ct.values.tolist()],
+        "note": note.strip(),
+    })
 
 
 @app.post("/api/plot")

@@ -294,7 +294,10 @@
                   <option value="box">Box plot (one column)</option>
                   <option value="box_all">Box plot (all numeric columns)</option>
                   <option value="scatter">Scatter plot</option>
+                  <option value="relationship">Relationship (two variables together)</option>
                   <option value="heatmap">Correlation heatmap</option>
+                  <option value="crosstab">Cross-tabulation</option>
+                  <option value="line">Line graph (two variables over time)</option>
                 </select>
               </label>
               <label class="control-field" id="field-primary">
@@ -305,6 +308,10 @@
                 <span id="secondary-label">Y AXIS</span>
                 <select id="secondary-column"></select>
               </label>
+              <label class="control-field" id="field-tertiary" hidden>
+                <span id="tertiary-label">Y VARIABLE 2</span>
+                <select id="tertiary-column"></select>
+              </label>
               <button class="button button-primary plot-button" id="plot-button" type="button"><span aria-hidden="true">✳</span> Create chart</button>
             </div>
             <div class="chart-result" id="chart-result">
@@ -312,6 +319,152 @@
                 <div class="chart-empty-icon" aria-hidden="true">⌁</div>
                 <strong>Your next insight starts here</strong>
                 <span>Pick a chart and create a visualization.</span>
+              </div>
+            </div>
+
+            <div class="crosstab-table-container" hidden>
+              <div class="crosstab-table-header">
+                <strong id="crosstab-title">Cross-tabulation</strong>
+                <span id="crosstab-note" class="crosstab-note"></span>
+              </div>
+              <div class="crosstab-table-scroll">
+                <table class="crosstab-table">
+                  <thead id="crosstab-thead"></thead>
+                  <tbody id="crosstab-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-guide" id="chart-guide">
+            <div class="chart-guide-header">
+              <button class="guide-toggle" id="guide-toggle" type="button" aria-expanded="false">
+                <span class="guide-toggle-icon" aria-hidden="true">⌄</span>
+                <span>Chart guide</span>
+                <span class="guide-toggle-sub">What each chart does &amp; when to use it</span>
+              </button>
+            </div>
+            <div class="chart-guide-body" id="chart-guide-body" hidden>
+              <div class="chart-guide-grid">
+                <article class="guide-card histogram">
+                  <div class="guide-card-icon">📊</div>
+                  <div class="guide-card-body">
+                    <strong>Histogram + KDE</strong>
+                    <span class="guide-card-desc">Shows the distribution shape and spread of a single numeric variable, with an optional KDE density curve overlay.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: numeric</span>
+                      <span class="guide-chip">Best for: one variable</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card violin">
+                  <div class="guide-card-icon">🎻</div>
+                  <div class="guide-card-body">
+                    <strong>Violin plot</strong>
+                    <span class="guide-card-desc">Shows a numeric distribution's density shape and spread, including where values concentrate.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: numeric</span>
+                      <span class="guide-chip">Best for: one variable</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card box">
+                  <div class="guide-card-icon">📦</div>
+                  <div class="guide-card-body">
+                    <strong>Box plot (one column)</strong>
+                    <span class="guide-card-desc">Summarizes a numeric distribution (median, quartiles, range) and helps spot potential outliers.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: numeric</span>
+                      <span class="guide-chip">Best for: one variable</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card count">
+                  <div class="guide-card-icon">🔢</div>
+                  <div class="guide-card-body">
+                    <strong>Count plot</strong>
+                    <span class="guide-card-desc">Compares how often each value occurs in a column, showing the most frequent categories.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: any column</span>
+                      <span class="guide-chip">Best for: categorical</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card scatter">
+                  <div class="guide-card-icon">🔸</div>
+                  <div class="guide-card-body">
+                    <strong>Scatter plot</strong>
+                    <span class="guide-card-desc">Explores the relationship between two numeric variables — do they move together or apart?</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: 2 numeric</span>
+                      <span class="guide-chip">Best for: correlation</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card relationship">
+                  <div class="guide-card-icon">🔗</div>
+                  <div class="guide-card-body">
+                    <strong>Relationship chart</strong>
+                    <span class="guide-card-desc">Shows how two variables change together. Pick Variable 1 and Variable 2 auto-filters to applicable columns.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: 2 numeric</span>
+                      <span class="guide-chip">Best for: pairs</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card line">
+                  <div class="guide-card-icon">📈</div>
+                  <div class="guide-card-body">
+                    <strong>Line graph (over time)</strong>
+                    <span class="guide-card-desc">Compares two numeric variables over a time axis — see trends and how they move side by side.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: time + 2 numeric</span>
+                      <span class="guide-chip">Best for: trends</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card heatmap">
+                  <div class="guide-card-icon">🌡️</div>
+                  <div class="guide-card-body">
+                    <strong>Correlation heatmap</strong>
+                    <span class="guide-card-desc">Compares pairwise correlations across numeric columns at a glance (capped at 25 columns).</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: many numeric</span>
+                      <span class="guide-chip">Best for: overview</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card crosstab">
+                  <div class="guide-card-icon">🔲</div>
+                  <div class="guide-card-body">
+                    <strong>Cross-tabulation</strong>
+                    <span class="guide-card-desc">Shows the relationship between two categorical columns as a frequency table with row/column totals.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: 2 categorical</span>
+                      <span class="guide-chip">Best for: categories</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card box-all">
+                  <div class="guide-card-icon">📋</div>
+                  <div class="guide-card-body">
+                    <strong>Box plot (all numeric)</strong>
+                    <span class="guide-card-desc">Side-by-side box plots across all numeric measurement columns for quick distribution comparison.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: many numeric</span>
+                      <span class="guide-chip">Best for: comparison</span>
+                    </div>
+                  </div>
+                </article>
               </div>
             </div>
           </div>

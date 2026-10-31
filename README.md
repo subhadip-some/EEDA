@@ -28,7 +28,7 @@ math, and interpreting what the data shows.
 - **Track your actions:** It will track your every action, you can even undo your action, so that 
 you can experiment with the data.
 - **Explore visually:** Create a histogram with a KDE curve, violin plot, box
-  plot, count plot, scatter plot, or correlation heatmap.
+  plot, count plot, scatter plot, relationship chart, line graph (two variables over time), or correlation heatmap.
 - **Detect Outliers:** user can detect outliers using Z-score and IQR Method 
   and box plot will help.
 - **Save your work:** Download the current working dataset as a CSV.
@@ -105,11 +105,18 @@ To stop the app, press `Ctrl+C` in the terminal where it is running.
 | Box plot | Summarizing a numeric distribution and spotting potential outliers |
 | Count plot | Comparing how often values occur in a column |
 | Scatter plot | Exploring the relationship between two numeric columns |
+| Relationship chart | Seeing how two variables change together (dependent dropdowns) |
+| Line graph | Comparing two numeric variables over time |
 | Correlation heatmap | Comparing pairwise correlations across numeric columns |
 
 Charts are exploratory aids. In particular, correlation does not establish
 causation, and patterns should be interpreted in the context of how the data
 was collected.
+
+### Chart guide
+A toggleable in-app guide on the visualization page describes what each chart does,
+when to use it, and which variable types it works with — so you can pick the right
+view for your data without leaving the app.
 
 ## CSV notes and session behavior
 

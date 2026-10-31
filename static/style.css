@@ -1084,6 +1084,92 @@ input[type="checkbox"] {
     background: #f3fbf7;
 }
 
+.crosstab-table-container {
+    margin-top: 24px;
+    border: 1px solid #e9ebee;
+    border-radius: 10px;
+    background: var(--white);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.crosstab-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ebee;
+    background: #fafbfc;
+}
+
+.crosstab-table-header strong {
+    font-size: 13px;
+    color: #20252c;
+}
+
+.crosstab-note {
+    font-size: 9px;
+    color: #7b8490;
+    font-style: italic;
+    max-width: 60%;
+    text-align: right;
+    line-height: 1.4;
+}
+
+.crosstab-table-scroll {
+    overflow-x: auto;
+    padding: 0 16px 16px 16px;
+}
+
+.crosstab-table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 400px;
+    font-size: 11px;
+}
+
+.crosstab-table th {
+    background: #f0efff;
+    color: #4a3fb8;
+    font-family: "DM Mono", Consolas, monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid #d8d2ff;
+    white-space: nowrap;
+}
+
+.crosstab-table th:first-child {
+    text-align: left;
+    background: #e3dfff;
+    color: #3d2fc4;
+}
+
+.crosstab-table td {
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #e9ebee;
+    color: #424953;
+}
+
+.crosstab-table td:first-child {
+    text-align: left;
+    font-weight: 700;
+    color: #20252c;
+    background: #fcfcfd;
+}
+
+.crosstab-table tr:nth-child(even) td:not(:first-child) {
+    background: #f7f8fa;
+}
+
+.crosstab-table td.total-cell {
+    font-weight: 800;
+    color: #1f7a4d;
+    background: #eef7f1;
+}
+
 .analysis-card {
     border: 1px solid #e9ebee;
     border-radius: 10px;
@@ -1536,3 +1622,138 @@ input[type="checkbox"] {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Chart Guide ===== */
+.chart-guide {
+    margin-top: 24px;
+    border: 1px solid #e9ebee;
+    border-radius: 10px;
+    background: var(--white);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.chart-guide-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eff0f2;
+    background: #fafbfc;
+}
+
+.guide-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: .2px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.guide-toggle:hover {
+    color: var(--violet-dark);
+}
+
+.guide-toggle-icon {
+    font-size: 10px;
+    transition: transform .2s ease;
+}
+
+.guide-toggle-sub {
+    margin-left: auto;
+    font-size: 9px;
+    color: #9aa1aa;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+.chart-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+    padding: 16px;
+}
+
+.guide-card {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e9ebee;
+    border-radius: 8px;
+    background: #fff;
+    cursor: default;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.guide-card:hover {
+    transform: translateY(-2px);
+    border-color: #d8dbe0;
+    box-shadow: 0 6px 18px rgba(34, 40, 54, 0.06);
+}
+
+.guide-card-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.guide-card-body {
+    min-width: 0;
+}
+
+.guide-card-body strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1px;
+    line-height: 1.3;
+}
+
+.guide-card-desc {
+    color: #626b76;
+    font-size: 9.5px;
+    line-height: 1.5;
+    margin-bottom: 9px;
+    overflow-wrap: anywhere;
+}
+
+.guide-card-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.guide-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    background: #f0efff;
+    color: #4a3fb8;
+    border-color: #d8d2ff;
+}
+
+.guide-card.histogram .guide-chip { background: #f5f4ff; color: #3d2fc4; border-color: #dedcff; }
+.guide-card.violin .guide-chip { background: #f3eaff; color: #6b4ff2; border-color: #e1d3ff; }
+.guide-card.box .guide-chip { background: #eef7f1; color: #1f7a4d; border-color: #d9ece4; }
+.guide-card.count .guide-chip { background: #fef7e0; color: #92400e; border-color: #fde68a; }
+.guide-card.scatter .guide-chip { background: #f6f5ff; color: #6258e8; border-color: #ddd9ff; }
+.guide-card.relationship .guide-chip { background: #fff3e8; color: #b3541e; border-color: #f9d9b3; }
+.guide-card.line .guide-chip { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+.guide-card.heatmap .guide-chip { background: #ffeef2; color: #b32828; border-color: #f1c6cc; }
+.guide-card.crosstab .guide-chip { background: #e7e9ff; color: #4a3fb8; border-color: #d8d2ff; }
+.guide-card.box-all .guide-chip { background: #eef7f1; color: #1f7a4d; border-color: #d9ece4; }
