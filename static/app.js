@@ -304,8 +304,10 @@ function renderOutlierControls(data) {
 
 function updateOutlierSettings() {
     const isZscore = $("#outlier-method").value === "zscore";
-    $("#outlier-threshold-field").hidden = !isZscore;
-    $("#outlier-multiplier-field").hidden = isZscore;
+    const thresholdField = $("#outlier-threshold-field");
+    const multiplierField = $("#outlier-multiplier-field");
+    if (thresholdField) thresholdField.hidden = !isZscore;
+    if (multiplierField) multiplierField.hidden = isZscore;
 }
 
 async function detectOutliers() {
@@ -620,22 +622,62 @@ async function loadPage(page) {
 }
 
 function updateChartOptions() {
+    const type = $("#chart-type").value;
     const primary = $("#primary-column");
     const secondary = $("#secondary-column");
-    const values = $("#chart-type").value === "count"
-        ? state.columns
-        : (state.numericColumns.length ? state.numericColumns : state.columns);
-    [primary, secondary].forEach((select) => {
-        const previous = select.value;
+    const tertiary = $("#tertiary-column");
+    let values;
+    let pairValues;
+    if (type === "crosstab") {
+        values = state.categoricalColumns.length ? state.categoricalColumns : state.columns;
+        pairValues = values;
+    } else if (type === "line") {
+        values = state.continuousColumns.length ? state.continuousColumns : state.columns;
+        const identifiers = new Set(state.identifierColumns ?? []);
+        pairValues = (state.continuousColumns ?? []).filter((column) => !identifiers.has(column));
+    } else if (type === "relationship") {
+        const identifiers = new Set(state.identifierColumns ?? []);
+        const usable = (state.numericColumns ?? []).filter((column) => !identifiers.has(column));
+        values = usable;
+        pairValues = usable;
+    } else {
+        values = type === "count"
+            ? state.columns
+            : (state.numericColumns.length ? state.numericColumns : state.columns);
+        pairValues = values;
+    }
+
+    const primarySelected = primary.value;
+    const secondarySelected = secondary.value;
+    const tertiarySelected = tertiary ? tertiary.value : null;
+
+    const fields = [
+        { select: primary, values },
+        { select: secondary, values: pairValues },
+    ];
+    if (tertiary) fields.push({ select: tertiary, values: pairValues });
+
+    fields.forEach(({ select, values: fieldValues }, index) => {
+        const others = fields.map((f) => f.select.value).filter((_, i) => i !== index);
         select.replaceChildren();
-        values.forEach((column) => {
+        fieldValues.forEach((column) => {
+            if ((type === "crosstab" || type === "line" || type === "relationship") && others.includes(column)) return;
             const option = document.createElement("option");
             option.value = column;
             option.textContent = column;
             select.append(option);
         });
-        if (values.includes(previous)) select.value = previous;
+        const currentSelected = select.value;
+        if (fieldValues.includes(currentSelected) && !others.includes(currentSelected)) {
+            select.value = currentSelected;
+        } else if (select.options.length > 0) {
+            select.value = select.options[0].value;
+        }
     });
+
+    if (type === "line" && tertiary && secondary.value === tertiary.value && tertiary.options.length > 1) {
+        tertiary.selectedIndex = tertiary.value === tertiary.options[0].value ? 1 : 0;
+    }
     if (secondary.options.length > 1 && secondary.value === primary.value) {
         secondary.selectedIndex = 1;
     }
@@ -643,9 +685,32 @@ function updateChartOptions() {
 
 function updateChartControls() {
     const type = $("#chart-type").value;
-    $("#field-primary").hidden = type === "heatmap" || type === "box_all";
-    $("#field-secondary").hidden = type !== "scatter";
-    $("#primary-label").textContent = type === "scatter" ? "X AXIS" : "COLUMN";
+    const fieldPrimary = $("#field-primary");
+    const fieldSecondary = $("#field-secondary");
+    const fieldTertiary = $("#field-tertiary");
+    const chartResult = $("#chart-result");
+    const crosstabContainer = $("#crosstab-table-container");
+    if (fieldPrimary) fieldPrimary.hidden = type === "heatmap" || type === "box_all";
+    if (fieldSecondary) fieldSecondary.hidden = type !== "scatter" && type !== "crosstab" && type !== "line" && type !== "relationship";
+    if (fieldTertiary) fieldTertiary.hidden = type !== "line";
+    if (type === "scatter") {
+        $("#primary-label").textContent = "X AXIS";
+        $("#secondary-label").textContent = "Y AXIS";
+    } else if (type === "crosstab") {
+        $("#primary-label").textContent = "X AXIS";
+        $("#secondary-label").textContent = "Y AXIS";
+    } else if (type === "relationship") {
+        $("#primary-label").textContent = "VARIABLE 1";
+        $("#secondary-label").textContent = "VARIABLE 2";
+    } else if (type === "line") {
+        $("#primary-label").textContent = "TIME / X";
+        $("#secondary-label").textContent = "Y VARIABLE 1";
+        $("#tertiary-label").textContent = "Y VARIABLE 2";
+    } else {
+        $("#primary-label").textContent = "COLUMN";
+    }
+    if (chartResult) chartResult.hidden = false;
+    if (crosstabContainer) crosstabContainer.hidden = true;
     updateChartOptions();
 }
 
@@ -751,6 +816,10 @@ async function changeColumns(action) {
 
 async function createChart() {
     clearMessage();
+    if (!state.datasetId) {
+        showMessage("Please upload a CSV dataset first.", "error");
+        return;
+    }
     const type = $("#chart-type").value;
     const payload = { dataset_id: state.datasetId, type };
     if (["histogram", "violin", "count", "box"].includes(type)) {
@@ -760,17 +829,32 @@ async function createChart() {
         payload.x = $("#primary-column").value;
         payload.y = $("#secondary-column").value;
     }
+    if (type === "crosstab") {
+        payload.column1 = $("#primary-column").value;
+        payload.column2 = $("#secondary-column").value;
+    }
+    if (type === "line") {
+        payload.x = $("#primary-column").value;
+        payload.y1 = $("#secondary-column").value;
+        payload.y2 = $("#tertiary-column").value;
+    }
+    if (type === "relationship") {
+        payload.x = $("#primary-column").value;
+        payload.y = $("#secondary-column").value;
+    }
     const button = $("#plot-button");
     button.disabled = true;
     button.textContent = "Working…";
+    const container = $("#chart-result");
+    container.replaceChildren();
+    const crosstabContainer = $("#crosstab-table-container");
+    if (crosstabContainer) crosstabContainer.hidden = true;
     try {
         const result = await api("/api/plot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-        const container = $("#chart-result");
-        container.replaceChildren();
         const image = document.createElement("img");
         image.src = result.image;
         image.alt = `${type} chart`;
@@ -782,13 +866,120 @@ async function createChart() {
             container.append(note);
         }
         setStep("visualize");
-        trackAction(`Created ${type} chart${payload.column ? ` for ${payload.column}` : ""}${payload.x && payload.y ? ` (${payload.x} vs ${payload.y})` : ""}`, "info");
+        trackAction(`Created ${type} chart${payload.column ? ` for ${payload.column}` : ""}${payload.x && payload.y ? ` (${payload.x} vs ${payload.y})` : ""}${payload.column1 && payload.column2 ? ` (${payload.column1} vs ${payload.column2})` : ""}${payload.x && payload.y1 && payload.y2 ? ` (${payload.x}: ${payload.y1} vs ${payload.y2})` : ""}`, "info");
+
+        if (type === "crosstab") {
+            await fetchCrosstabTable(payload.column1, payload.column2);
+        } else {
+            const crosstabContainer = $("#crosstab-table-container");
+            if (crosstabContainer) crosstabContainer.hidden = true;
+        }
     } catch (error) {
         showMessage(error.message);
     } finally {
         button.disabled = false;
         button.innerHTML = '<span aria-hidden="true">✳</span> Create chart';
     }
+}
+
+async function fetchCrosstabTable(col1, col2) {
+    if (!state.datasetId) return;
+    try {
+        const result = await api("/api/crosstab", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataset_id: state.datasetId, column1: col1, column2: col2 }),
+        });
+        renderCrosstabTable(result);
+    } catch (error) {
+        showMessage(error.message);
+    }
+}
+
+function renderCrosstabTable(result) {
+    const container = $("#crosstab-table-container");
+    if (container) container.hidden = false;
+
+    $("#crosstab-title").textContent = `Cross-tabulation: ${result.column1} vs ${result.column2}`;
+    const noteEl = $("#crosstab-note");
+    if (noteEl) {
+        noteEl.textContent = result.note ? `Note: ${result.note}` : "";
+        noteEl.hidden = !result.note;
+    }
+
+    const thead = $("#crosstab-thead");
+    thead.replaceChildren();
+    const headerRow = document.createElement("tr");
+    const thCorner = document.createElement("th");
+    thCorner.textContent = "";
+    headerRow.append(thCorner);
+    result.col_labels.forEach((label) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.append(th);
+    });
+    const thTotal = document.createElement("th");
+    thTotal.textContent = "Total";
+    headerRow.append(thTotal);
+    thead.append(headerRow);
+
+    const tbody = $("#crosstab-tbody");
+    tbody.replaceChildren();
+
+    let grandTotal = 0;
+    const rowTotals = [];
+    const colTotals = result.col_labels.map(() => 0);
+
+    result.row_labels.forEach((rowLabel, i) => {
+        const row = document.createElement("tr");
+        const tdLabel = document.createElement("td");
+        tdLabel.textContent = rowLabel;
+        row.append(tdLabel);
+
+        let rowTotal = 0;
+        result.col_labels.forEach((_, j) => {
+            const val = result.data[i][j];
+            rowTotal += val;
+            colTotals[j] += val;
+            grandTotal += val;
+
+            const td = document.createElement("td");
+            td.textContent = val;
+            row.append(td);
+        });
+        rowTotals.push(rowTotal);
+
+        const tdRowTotal = document.createElement("td");
+        tdRowTotal.className = "total-cell";
+        tdRowTotal.textContent = rowTotal;
+        row.append(tdRowTotal);
+        tbody.append(row);
+    });
+
+    const totalRow = document.createElement("tr");
+    const tdTotalLabel = document.createElement("td");
+    tdTotalLabel.textContent = "Total";
+    tdTotalLabel.style.fontWeight = "800";
+    tdTotalLabel.style.background = "#eef7f1";
+    tdTotalLabel.style.color = "#1f7a4d";
+    totalRow.append(tdTotalLabel);
+
+    colTotals.forEach((total, j) => {
+        const td = document.createElement("td");
+        td.textContent = total;
+        td.style.fontWeight = "700";
+        td.style.background = "#eef7f1";
+        td.style.color = "#1f7a4d";
+        totalRow.append(td);
+    });
+
+    const tdGrandTotal = document.createElement("td");
+    tdGrandTotal.textContent = grandTotal;
+    tdGrandTotal.style.fontWeight = "800";
+    tdGrandTotal.style.background = "#d3ecde";
+    tdGrandTotal.style.color = "#1f7a4d";
+    totalRow.append(tdGrandTotal);
+    tbody.append(totalRow);
 }
 
 $("#upload-form").addEventListener("submit", (event) => event.preventDefault());
@@ -835,4 +1026,17 @@ $("#apply-missing-value").addEventListener("click", applyMissingValueAction);
 $("#outlier-method").addEventListener("change", updateOutlierSettings);
 $("#detect-outliers").addEventListener("click", detectOutliers);
 $("#chart-type").addEventListener("change", updateChartControls);
+$("#primary-column").addEventListener("change", () => updateChartOptions());
+$("#secondary-column").addEventListener("change", () => updateChartOptions());
+$("#tertiary-column").addEventListener("change", () => updateChartOptions());
 $("#plot-button").addEventListener("click", createChart);
+
+$("#guide-toggle").addEventListener("click", () => {
+    const body = $("#chart-guide-body");
+    const icon = $("#chart-guide").querySelector(".guide-toggle-icon");
+    const isHidden = body.hidden;
+    body.hidden = !isHidden;
+    if (icon) icon.textContent = isHidden ? "⌃" : "⌄";
+    const button = $("#guide-toggle");
+    button.setAttribute("aria-expanded", String(!isHidden));
+});
