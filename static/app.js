@@ -647,18 +647,28 @@ function updateChartOptions() {
         pairValues = values;
     }
 
-    const primarySelected = primary.value;
-    const secondarySelected = secondary.value;
-    const tertiarySelected = tertiary ? tertiary.value : null;
+    const selectedValues = {
+        primary: primary.value,
+        secondary: secondary.value,
+        tertiary: tertiary ? tertiary.value : null,
+    };
 
     const fields = [
-        { select: primary, values },
-        { select: secondary, values: pairValues },
+        { select: primary, key: "primary", values },
     ];
-    if (tertiary) fields.push({ select: tertiary, values: pairValues });
+    if (["scatter", "crosstab", "line", "relationship"].includes(type)) {
+        fields.push({ select: secondary, key: "secondary", values: pairValues });
+    }
+    if (type === "line" && tertiary) {
+        fields.push({ select: tertiary, key: "tertiary", values: pairValues });
+    }
 
-    fields.forEach(({ select, values: fieldValues }, index) => {
-        const others = fields.map((f) => f.select.value).filter((_, i) => i !== index);
+    fields.forEach(({ select, key, values: fieldValues }, index) => {
+        const others = fields
+            .filter((_, i) => i !== index)
+            .map((field) => selectedValues[field.key]);
+        const selectedValue = selectedValues[key];
+
         select.replaceChildren();
         fieldValues.forEach((column) => {
             if ((type === "crosstab" || type === "line" || type === "relationship") && others.includes(column)) return;
@@ -667,9 +677,9 @@ function updateChartOptions() {
             option.textContent = column;
             select.append(option);
         });
-        const currentSelected = select.value;
-        if (fieldValues.includes(currentSelected) && !others.includes(currentSelected)) {
-            select.value = currentSelected;
+
+        if (fieldValues.includes(selectedValue) && !others.includes(selectedValue)) {
+            select.value = selectedValue;
         } else if (select.options.length > 0) {
             select.value = select.options[0].value;
         }
