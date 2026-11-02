@@ -253,7 +253,18 @@
                 <span>IQR MULTIPLIER</span>
                 <input id="outlier-multiplier" type="number" value="1.5" min="0.1" step="0.1">
               </label>
-              <button class="button button-primary" id="detect-outliers" type="button">Detect outliers</button>
+              <label class="control-field">
+                <span>HANDLE OUTLIERS</span>
+                <select id="outlier-action">
+                  <option value="mean">Replace with mean</option>
+                  <option value="median">Replace with median</option>
+                  <option value="mode">Replace with mode</option>
+                  <option value="winsorize">Winsorization</option>
+                  <option value="remove_rows">Remove rows (last resort)</option>
+                </select>
+              </label>
+              <button class="button button-secondary" id="detect-outliers" type="button">Detect outliers</button>
+              <button class="button button-primary" id="apply-outlier-action" type="button">Apply action</button>
             </div>
             <div id="outlier-result" class="outlier-result">
               <span class="outlier-empty">Choose a numeric column and detection method.</span>

@@ -300,6 +300,7 @@ function renderOutlierControls(data) {
         if (usable.includes(previous)) columnSelect.value = previous;
     }
     $("#detect-outliers").disabled = usable.length === 0;
+    $("#apply-outlier-action").disabled = usable.length === 0;
 }
 
 function updateOutlierSettings() {
@@ -362,6 +363,51 @@ async function detectOutliers() {
             container.append(empty);
         }
         trackAction(`Detected ${result.outlier_count} outlier${result.outlier_count === 1 ? "" : "s"} in ${column} using ${method === "zscore" ? "Z-score" : "IQR"}`, "info");
+    } catch (error) {
+        showMessage(error.message);
+    }
+}
+
+async function applyOutlierAction() {
+    const column = $("#outlier-column").value;
+    if (!column) return;
+
+    const action = $("#outlier-action").value;
+    const method = $("#outlier-method").value;
+    if (action === "remove_rows" && !window.confirm(
+        `Remove all rows containing detected outliers in "${column}"? This is destructive, but can be undone.`
+    )) {
+        return;
+    }
+
+    clearMessage();
+    try {
+        const data = await api("/api/handle-outliers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                dataset_id: state.datasetId,
+                column,
+                method,
+                action,
+                threshold: $("#outlier-threshold").value,
+                multiplier: $("#outlier-multiplier").value,
+            }),
+        });
+        state.selectedRows.clear();
+        state.selectedColumns.clear();
+        renderTable(data);
+
+        const actionLabels = {
+            mean: "replaced with mean",
+            median: "replaced with median",
+            mode: "replaced with mode",
+            winsorize: "winsorized",
+            remove_rows: "removed rows for",
+        };
+        trackAction(`Handled outliers in ${column}: ${actionLabels[action] || action}`, "success");
+        showMessage(data.message || "Outliers handled successfully.", "success");
+        $("#outlier-result").innerHTML = '<span class="outlier-empty">Outliers handled. Detect again to verify the updated data.</span>';
     } catch (error) {
         showMessage(error.message);
     }
@@ -1035,6 +1081,7 @@ $("#missing-action").addEventListener("change", updateMissingConstantField);
 $("#apply-missing-value").addEventListener("click", applyMissingValueAction);
 $("#outlier-method").addEventListener("change", updateOutlierSettings);
 $("#detect-outliers").addEventListener("click", detectOutliers);
+$("#apply-outlier-action").addEventListener("click", applyOutlierAction);
 $("#chart-type").addEventListener("change", updateChartControls);
 $("#primary-column").addEventListener("change", () => updateChartOptions());
 $("#secondary-column").addEventListener("change", () => updateChartOptions());

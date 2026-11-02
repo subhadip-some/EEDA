@@ -145,6 +145,26 @@ def detect_outliers_iqr(series, multiplier=1.5):
     return (values < lower_bound) | (values > upper_bound)
 
 
+def get_outlier_bounds(series, method="zscore", threshold=3.0, multiplier=1.5):
+    values = pd.to_numeric(series, errors="coerce")
+    finite = values[np.isfinite(values)]
+    if len(finite) == 0:
+        return None, None
+
+    if method == "zscore":
+        mean = finite.mean()
+        std = finite.std(ddof=0)
+        if not math.isfinite(float(std)) or float(std) == 0:
+            return None, None
+        return mean - threshold * std, mean + threshold * std
+
+    q1 = finite.quantile(0.25)
+    q3 = finite.quantile(0.75)
+    iqr = q3 - q1
+    return q1 - multiplier * iqr, q3 + multiplier * iqr
+
+
+
 def make_dataset_response(dataset_id,frame,page=0):
     page_count = max(1,(len(frame) + rows_per_page-1) // rows_per_page)
     page = min(max(page,0),page_count -1)
@@ -556,6 +576,110 @@ def detect_outliers():
         "outliers": outliers,
         "truncated": int(mask.fillna(False).sum()) > 100,
     })
+
+
+@app.post("/api/handle-outliers")
+def handle_outliers():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON outlier request is required.")
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    column = data.get("column")
+    method = data.get("method", "zscore")
+    action = data.get("action")
+    if not isinstance(column, str) or column not in frame.columns:
+        return error_response("Choose a valid column.")
+    if not pd.api.types.is_numeric_dtype(frame[column]):
+        return error_response("Outlier handling is only available for numeric columns.")
+    if method not in ("zscore", "iqr"):
+        return error_response("Choose either zscore or iqr as the detection method.")
+    if action not in ("mean", "median", "mode", "winsorize", "remove_rows"):
+        return error_response("Choose a valid outlier handling action.")
+
+    try:
+        if method == "zscore":
+            threshold = float(data.get("threshold", 3.0))
+            if not math.isfinite(threshold) or threshold <= 0:
+                raise ValueError
+            mask = detect_outliers_zscore(frame[column], threshold)
+            lower_bound, upper_bound = get_outlier_bounds(
+                frame[column], method="zscore", threshold=threshold
+            )
+            method_setting = f"Z-score threshold {threshold}"
+        else:
+            multiplier = float(data.get("multiplier", 1.5))
+            if not math.isfinite(multiplier) or multiplier <= 0:
+                raise ValueError
+            mask = detect_outliers_iqr(frame[column], multiplier)
+            lower_bound, upper_bound = get_outlier_bounds(
+                frame[column], method="iqr", multiplier=multiplier
+            )
+            method_setting = f"IQR multiplier {multiplier}"
+    except (TypeError, ValueError):
+        return error_response("The method setting must be a positive number.")
+
+    mask = mask.fillna(False)
+    outlier_count = int(mask.sum())
+    if outlier_count == 0:
+        return error_response("No outliers were found in this column. Detection must find values before they can be handled.")
+
+    updated_frame = frame.copy()
+    if action == "remove_rows":
+        updated_frame = updated_frame.loc[~mask].copy()
+        if updated_frame.empty:
+            return error_response("This action would remove every row.")
+        description = f"Removed {outlier_count} outlier row{'s' if outlier_count != 1 else ''} in {column}"
+        message = f"Removed {outlier_count} outlier row{'s' if outlier_count != 1 else ''} from {column}."
+    else:
+        values = pd.to_numeric(updated_frame[column], errors="coerce")
+        updated_frame[column] = values.astype(float)
+        values = updated_frame[column]
+        if action == "mean":
+            non_outlier_values = values.loc[~mask & np.isfinite(values)]
+            replacement = non_outlier_values.mean() if len(non_outlier_values) else values.mean()
+            if not math.isfinite(float(replacement)):
+                return error_response("There is no valid replacement value for this column.")
+            updated_frame.loc[mask, column] = replacement
+            description = f"Replaced outliers in {column} with mean"
+            message = f"Replaced {outlier_count} outlier{'s' if outlier_count != 1 else ''} in {column} with the mean."
+        elif action == "median":
+            non_outlier_values = values.loc[~mask & np.isfinite(values)]
+            replacement = non_outlier_values.median() if len(non_outlier_values) else values.median()
+            if not math.isfinite(float(replacement)):
+                return error_response("There is no valid replacement value for this column.")
+            updated_frame.loc[mask, column] = replacement
+            description = f"Replaced outliers in {column} with median"
+            message = f"Replaced {outlier_count} outlier{'s' if outlier_count != 1 else ''} in {column} with the median."
+        elif action == "mode":
+            non_outlier_values = values.loc[~mask & np.isfinite(values)]
+            source_values = non_outlier_values if len(non_outlier_values) else values
+            modes = source_values.mode(dropna=True)
+            if modes.empty:
+                return error_response("There is no valid replacement value for this column.")
+            replacement = modes.iloc[0]
+            if not math.isfinite(float(replacement)):
+                return error_response("There is no valid replacement value for this column.")
+            updated_frame.loc[mask, column] = replacement
+            description = f"Replaced outliers in {column} with mode"
+            message = f"Replaced {outlier_count} outlier{'s' if outlier_count != 1 else ''} in {column} with the mode."
+        else:
+            if lower_bound is None or upper_bound is None:
+                return error_response("Winsorization is unavailable because the column has no valid variance or bounds.")
+            updated_frame.loc[mask & (values < lower_bound), column] = lower_bound
+            updated_frame.loc[mask & (values > upper_bound), column] = upper_bound
+            description = f"Winsorized outliers in {column}"
+            message = f"Winsorized {outlier_count} outlier{'s' if outlier_count != 1 else ''} in {column}."
+
+    push_undo_action(dataset_id, f"{description} ({method_setting})", frame)
+    datasets[dataset_id] = updated_frame
+    response = make_dataset_response(dataset_id, updated_frame)
+    response["message"] = message
+    return jsonify(response)
 
 
 @app.post("/api/undo")

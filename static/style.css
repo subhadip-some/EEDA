@@ -944,7 +944,7 @@ input[type="checkbox"] {
 
 .outlier-controls {
     display: grid;
-    grid-template-columns: repeat(3, minmax(140px, 1fr)) minmax(140px, 0.8fr) auto;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
     align-items: end;
     gap: 12px;
     margin-top: 14px;
