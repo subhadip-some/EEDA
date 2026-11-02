@@ -31,6 +31,8 @@ you can experiment with the data.
   plot, count plot, scatter plot, relationship chart, line graph (two variables over time), or correlation heatmap.
 - **Detect Outliers:** user can detect outliers using Z-score and IQR Method 
   and box plot will help.
+- **Handle Outliers:** User now can handle outliers using 5 methods,which is
+  replace with mean/median/mode, winsorization technique and remove.
 - **Save your work:** Download the current working dataset as a CSV.
 
 
