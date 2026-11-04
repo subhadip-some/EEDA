@@ -1,158 +1,314 @@
 # EEDA — Easy Exploratory Data Analysis
 
-EEDA is a browser-based tool that helps students explore a dataset without
-having to write analysis code. Upload a CSV, inspect its columns and summary
-statistics, create visualizations, and download a modified copy—all from a
-simple interface.
+EEDA is an open-source, browser-based Exploratory Data Analysis (EDA) tool designed to help students explore, understand, and prepare datasets without writing repetitive Python or statistical code.
 
-The goal is to make exploratory data analysis more approachable so students
-can spend less time on code and more time asking questions, understanding the
-math, and interpreting what the data shows.
+Upload a CSV file, inspect its structure, explore statistical summaries, create visualizations, handle missing values and outliers, and download your modified dataset—all through an interactive interface.
 
+The goal is simple: spend less time writing analysis code and more time understanding the mathematics, asking meaningful questions, and interpreting what the data reveals.
 
+**Project Status:** 🚧 Actively under development. Features, improvements, and documentation are continuously evolving.
 
-## What you can do for now
- we are gonna update this section as we add more feature, it is still in development
+---
 
-- **Load a dataset:** Upload a CSV file up to 16 MB.
-- **Review the data:** Browse the table, move between pages, and see dataset
-  size, column types, missing values, duplicate rows, and column statistics.
-- **Spot identifier-like columns:** See which numeric-looking columns
-  (zip/postal codes, IDs, codes) are flagged as categorical identifiers rather
-  than real measurements.
-- **Classify columns by type:** Numeric columns are split into continuous (measurements, decimals, time), discrete (counts, quantities, headcounts), and identifier-like (IDs, zip/postal codes). Categorical columns (text, labels, categories) are shown in a separate box.
-- **Choose features:** Keep selected columns or remove selected columns from
-  the working dataset.
-- **Handle missing values:** handle missing values based on numeric column
- and categorical column.
-- **Track your actions:** It will track your every action, you can even undo your action, so that 
-you can experiment with the data.
-- **Explore visually:** Create a histogram with a KDE curve, violin plot, box
-  plot, count plot, scatter plot, relationship chart, line graph (two variables over time), or correlation heatmap.
-- **Detect Outliers:** user can detect outliers using Z-score and IQR Method 
-  and box plot will help.
-- **Handle Outliers:** User now can handle outliers using 5 methods,which is
-  replace with mean/median/mode, winsorization technique and remove.
-- **Save your work:** Download the current working dataset as a CSV.
+## Features
 
+### Available Features
 
+- **Load a dataset:** Upload CSV files up to 16 MB.
+- **Dataset overview:** Inspect dataset shape, column names, data types, missing values, duplicate rows, and statistical summaries.
+- **Identifier-like column detection:** Identify numeric-looking columns such as IDs, ZIP/postal codes, and other codes that should be treated as categorical identifiers.
+- **Column classification:** Organize columns into continuous, discrete, identifier-like, and categorical types.
+- **Statistical summaries:** Calculate mean, median, mode, minimum, maximum, standard deviation, variance, and skewness where applicable.
+- **Feature selection:** Keep selected columns or remove unwanted columns from the working dataset.
+- **Missing-value handling:** Handle missing values in numeric and categorical columns.
+- **Action history:** Track data modifications, undo individual actions, and reset changes to experiment with datasets.
+- **Data visualization:** Generate histograms with KDE, violin plots, box plots, count plots, scatter plots, relationship charts, line graphs, and correlation heatmaps.
+- **Outlier detection:** Identify potential outliers using Z-score and IQR methods, supported by box plots.
+- **Outlier handling:** Apply mean, median, or mode replacement, winsorization, or outlier removal.
+- **Export dataset:** Download the modified working dataset as a CSV file.
 
-EEDA does not require students to write Python or statistical code to use
-these features. Students still choose what to inspect and interpret the
-results; the tool is intended to support analysis, not replace it.
+### Upcoming Features
 
-## Getting started
+This section will be updated as development progresses.
+
+- [ ] Additional statistical analysis techniques.
+- [ ] More visualization options.
+- [ ] Advanced data-cleaning operations.
+- [ ] Improved dataset insights and interpretation.
+- [ ] Further performance and UI/UX improvements.
+
+---
+
+## How EEDA Works
+
+EEDA follows a manual, learning-oriented approach to exploratory data analysis.
+
+Instead of automatically performing every analysis, users decide:
+
+1. What they want to investigate.
+2. Which columns are relevant.
+3. Which statistical methods or visualizations to apply.
+4. How to interpret the results.
+5. Which data-cleaning operations are appropriate.
+
+EEDA provides the tools to make these processes easier while keeping the actual analytical decisions in the user's hands.
+
+---
+
+## Getting Started
+
+Follow these instructions to set up EEDA locally for development or personal use.
 
 ### Requirements
 
 - Python 3
+- Git
 - A modern web browser
 
-### Install and run
+### Installation
 
-1. Clone or download this repository, then open a terminal in the project
-   folder.
-2. Create and activate a virtual environment.
+**1. Clone the repository**
 
-   **Windows PowerShell**
+```bash
+git clone <repository-url>
+```
 
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   ```
+**2. Navigate to the project directory**
 
-   **macOS or Linux**
+```bash
+cd EEDA
+```
 
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
+**3. Create a virtual environment**
 
-3. Install the dependencies and start the app:
+Windows PowerShell:
 
-   ```bash
-   python -m pip install -r requirements.txt
-   python app.py
-   ```
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
 
-   On macOS or Linux, use `python3` instead of `python` if that is how Python
-   is installed on your system.
+macOS / Linux:
 
-4. Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
-5. Choose a CSV file to begin exploring.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-To stop the app, press `Ctrl+C` in the terminal where it is running.
+**4. Install dependencies**
 
-## A student workflow
+```bash
+python -m pip install -r requirements.txt
+```
 
-1. **Start with a question.** For example: What does this variable's
-   distribution look like? Do two measurements appear related?
-2. **Upload your CSV** and review the dataset profile. Check the row and
-   column counts, missing values, duplicates, and detected numeric columns.
-3. **Inspect the preview and statistics.** The table displays 20 rows per
-   page. Column summaries include mean, median, mode, minimum, maximum,
-   standard deviation, variance, and skewness where applicable.
-4. **Choose features** to keep or remove from the working dataset.
-5. **Create a chart** and select the relevant column or columns. Compare the
-   visualization with the summary statistics and your expectations.
-6. **Download the modified CSV** if you want to keep the version with your
-   selected columns.
+**5. Run the application**
 
-## Available visualizations
+```bash
+python app.py
+```
 
-| Visualization | Useful for |
-| --- | --- |
-| Histogram + KDE | Exploring the shape and spread of a numeric variable |
-| Violin plot | Seeing a numeric distribution's shape and spread |
-| Box plot | Summarizing a numeric distribution and spotting potential outliers |
-| Count plot | Comparing how often values occur in a column |
-| Scatter plot | Exploring the relationship between two numeric columns |
-| Relationship chart | Seeing how two variables change together (dependent dropdowns) |
-| Line graph | Comparing two numeric variables over time |
-| Correlation heatmap | Comparing pairwise correlations across numeric columns |
+**6. Open EEDA in your browser**
 
-Charts are exploratory aids. In particular, correlation does not establish
-causation, and patterns should be interpreted in the context of how the data
-was collected.
-
-### Chart guide
-A toggleable in-app guide on the visualization page describes what each chart does,
-when to use it, and which variable types it works with — so you can pick the right
-view for your data without leaving the app.
-
-## CSV notes and session behavior
-
-- Upload a `.csv` file with column names in its first row.
-- Files larger than 16 MB are not accepted.
-- Your uploaded data and edits are held in the running app's memory. They are
-  not saved to disk by EEDA and will be lost when the app process stops.
-- The app reads the CSV on upload and exports the current working dataset as
-  UTF-8 CSV when you download it. The original file on your computer is not
-  changed.
-- Identifier-like detection is a heuristic: a numeric column is flagged when its
-  name mentions zip/postal/postcode, id, code, number, or key, or when it is an
-  all-unique integer column. It is a suggestion, not a guarantee — you decide
-  how to treat each column.
-- Continuous / discrete classification uses column dtype and value patterns:
-  float columns with fractional parts are continuous; integer columns and
-  low-cardinality whole-number columns are discrete. High-cardinality float
-  columns without decimals are treated as continuous measurements.
-
-## Built with
-
-EEDA is a Python Flask application. It uses pandas and NumPy to work with
-tabular data, and Matplotlib and Seaborn to create charts. The interface is
-built with HTML, CSS, and JavaScript.
-
-## Project structure
+Visit:
 
 ```text
-.
-├── app.py                 # Flask app and data/plot endpoints
-├── requirements.txt       # Python dependencies
-├── templates/
-│   └── index.html         # Main application page
-└── static/
-    ├── app.js             # Browser-side interactions
-    └── style.css          # Application styles
+http://127.0.0.1:5000
 ```
+
+You can now upload a CSV file and start exploring your dataset.
+
+To stop the application, press `Ctrl + C` in the terminal.
+
+---
+
+## A Typical Student Workflow
+
+1. **Start with a question:** Decide what you want to investigate in your dataset.
+2. **Upload a dataset:** Inspect the dataset overview and identify potential data-quality issues.
+3. **Explore columns:** Review column classifications and statistical summaries.
+4. **Prepare the data:** Handle missing values, duplicates, unwanted columns, and outliers as needed.
+5. **Visualize:** Select appropriate charts to investigate distributions and relationships.
+6. **Interpret:** Compare visual patterns with statistical summaries and draw conclusions.
+7. **Export:** Download the modified dataset for further analysis.
+
+---
+
+## Available Visualizations
+
+| Visualization       | Purpose                                                 |
+| ------------------- | ------------------------------------------------------- |
+| Histogram + KDE     | Explore the distribution and shape of numerical data    |
+| Violin Plot         | Understand distribution shape and density               |
+| Box Plot            | Summarize distributions and identify potential outliers |
+| Count Plot          | Compare category frequencies                            |
+| Scatter Plot        | Explore relationships between two numerical variables   |
+| Relationship Chart  | Investigate how two variables change together           |
+| Line Graph          | Examine changes in numerical variables over time        |
+| Correlation Heatmap | Compare pairwise correlations between numerical columns |
+
+**Chart Guide:** EEDA includes an in-app guide explaining what each visualization represents, when to use it, and which variable types it supports.
+
+Charts are exploratory aids. Correlation does not establish causation, and visual patterns should always be interpreted in context.
+
+---
+
+## Project Structure
+
+```text
+EEDA/
+│
+├── app.py                  # Flask application and backend logic
+├── requirements.txt        # Python dependencies
+│
+├── templates/
+│   └── index.html          # Main application interface
+│
+└── static/
+    ├── app.js              # Frontend interactions
+    └── style.css           # Application styling
+```
+
+---
+
+## Technology Stack
+
+| Technology | Purpose                           |
+| ---------- | --------------------------------- |
+| Python     | Backend development               |
+| Flask      | Web framework and API endpoints   |
+| Pandas     | Dataset manipulation and analysis |
+| NumPy      | Numerical operations              |
+| Matplotlib | Data visualization                |
+| Seaborn    | Statistical visualization         |
+| HTML       | Application structure             |
+| CSS        | Interface styling                 |
+| JavaScript | Frontend interactions             |
+
+---
+
+## CSV Handling and Session Behavior
+
+- Uploaded files must be CSV files with column names in the first row.
+- Files larger than 16 MB are not accepted.
+- Uploaded datasets and modifications are held in the running application's memory.
+- EEDA does not permanently save uploaded datasets to disk.
+- Data and modifications are lost when the application process stops.
+- Downloading exports the current working dataset as UTF-8 CSV.
+- The original CSV file on your computer is never modified.
+
+### Column Classification
+
+Identifier-like detection is heuristic-based. Columns may be flagged based on their names or value patterns. These classifications are suggestions, not guarantees.
+
+Continuous and discrete classification uses data types and value patterns. Users should verify the classifications before performing statistical analysis.
+
+---
+
+## Contributing
+
+Contributions from developers, students, and data enthusiasts are welcome!
+
+EEDA is an evolving project, and there is plenty of room for improvements, new visualizations, statistical methods, data-cleaning techniques, and interface enhancements.
+
+If you want to contribute, follow these steps:
+
+### 1. Fork the repository
+
+Fork the EEDA repository to your GitHub account.
+
+### 2. Clone your fork
+
+```bash
+git clone https://github.com/<your-username>/EEDA.git
+cd EEDA
+```
+
+### 3. Create a new branch
+
+Create a separate branch for your contribution.
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+For bug fixes:
+
+```bash
+git checkout -b fix/your-fix-name
+```
+
+### 4. Set up the development environment
+
+Follow the installation instructions in the Getting Started section.
+
+### 5. Make your changes
+
+You can contribute by:
+
+- Adding new statistical analysis methods.
+- Implementing additional visualization techniques.
+- Improving missing-value and outlier handling.
+- Optimizing existing Python or JavaScript code.
+- Improving the user interface and experience.
+- Fixing bugs and improving error handling.
+- Improving documentation.
+
+Please keep your changes focused and avoid modifying unrelated parts of the application.
+
+### 6. Commit your changes
+
+Use clear and descriptive commit messages.
+
+```bash
+git add .
+git commit -m "Add new visualization feature"
+```
+
+### 7. Push your branch
+
+```bash
+git push origin feature/your-feature-name
+```
+
+### 8. Open a Pull Request
+
+Go to your fork on GitHub and create a Pull Request against the original EEDA repository.
+
+In your Pull Request, briefly explain:
+
+- What you changed.
+- Why the change is useful.
+- How the feature or fix works.
+- Any relevant screenshots, if applicable.
+
+Please make sure your changes work locally before submitting a Pull Request.
+
+### Reporting Bugs
+
+If you encounter a bug, open a GitHub Issue and include:
+
+- A clear description of the problem.
+- Steps to reproduce it.
+- Expected behavior.
+- Actual behavior.
+- Relevant error messages or screenshots.
+
+---
+
+## Development Notes
+
+- EEDA is designed primarily as a learning-oriented EDA platform.
+- Users should remain in control of their analytical decisions.
+- New features should prioritize statistical correctness, usability, and educational value.
+- Contributions should maintain consistency with the existing project architecture.
+- The project is continuously evolving, so some features and implementation details may change.
+
+---
+
+## License
+
+If you plan to distribute EEDA as an open-source project, add your chosen license here and include the corresponding `LICENSE` file in the repository.
+
+---
+
+**Want to contribute?** Fork the repository, explore the code, and help make exploratory data analysis more accessible to students.
