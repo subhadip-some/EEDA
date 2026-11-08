@@ -14,6 +14,19 @@ from flask import Flask, render_template, jsonify, request, send_file
 #without openning a window
 matplotlib.use("Agg")
 
+plt.style.use("dark_background")
+sns.set_theme(style="darkgrid", rc={
+    "figure.facecolor": "#0D0D0D",
+    "axes.facecolor": "#111313",
+    "axes.edgecolor": "#00FFFF",
+    "axes.labelcolor": "#D1D5DB",
+    "text.color": "#00FF00",
+    "xtick.color": "#A9B5C4",
+    "ytick.color": "#A9B5C4",
+    "grid.color": "#00FFFF",
+    "grid.alpha": 0.35,
+})
+
 app = Flask(__name__)      
 app.config["MAX_CONTENT_LENGTH"] = 16*1024*1024 #upload lim:16MB
 
@@ -729,7 +742,7 @@ def make_chart(frame, data):
 
         figure_width = max(8, min(20, plot_data.shape[1] * 0.75))
         figure, axis = plt.subplots(figsize=(figure_width, 5.5))
-        sns.boxplot(data=plot_data, color="#d8d5ff", ax=axis)
+        sns.boxplot(data=plot_data, color="#00FFFF", ax=axis)
         axis.set_title("Box plots for all numeric columns")
         axis.set_xlabel("Column")
         axis.set_ylabel("Value")
@@ -751,22 +764,22 @@ def make_chart(frame, data):
 
         figure, axis = plt.subplots(figsize=(8, 4.5))
         if chart_type == "histogram":
-            sns.histplot(x=values, bins="auto", stat="density", alpha=0.65, label="Histogram", ax=axis)
+            sns.histplot(x=values, bins="auto", stat="density", alpha=0.65, color="#00FF00", label="Histogram", ax=axis)
             if len(values) > 1 and np.std(values) > 0:
                 sample = values
                 if len(sample) > 5000:
                     sample = sample[np.linspace(0, len(sample) - 1, 5000, dtype=int)]
-                sns.kdeplot(x=sample, color="#f08c52", label="KDE", ax=axis)
+                sns.kdeplot(x=sample, color="#FF00FF", label="KDE", ax=axis)
 
             axis.set(title=f"Distribution of {column}", xlabel=column, ylabel="Density")
             axis.legend()
         elif chart_type == "violin":
             if len(values) > 10_000:
                 values = values[np.linspace(0, len(values) - 1, 10_000, dtype=int)]
-            sns.violinplot(y=values, inner="box", color="#d8d5ff", ax=axis)
+            sns.violinplot(y=values, inner="box", color="#00FFFF", ax=axis)
             axis.set(title=f"Distribution of {column}", ylabel=column)
         else:
-            sns.boxplot(y=values, color="#d8d5ff", ax=axis)
+            sns.boxplot(y=values, color="#00FFFF", ax=axis)
             axis.set(title=f"Box plot of {column}", ylabel=column)
         figure.tight_layout()
         return figure, ""
@@ -789,7 +802,7 @@ def make_chart(frame, data):
             "count": counts.to_numpy(),
         })
         figure, axis = plt.subplots(figsize=(8, 4.5))
-        sns.barplot(data=plot_data, x="label", y="count", color="#6258e8", ax=axis)
+        sns.barplot(data=plot_data, x="label", y="count", color="#00FF00", ax=axis)
         axis.set(title=f"Value counts for {column}", xlabel=column, ylabel="Count")
         axis.tick_params(axis="x", labelrotation=45)
         figure.tight_layout()
@@ -817,7 +830,7 @@ def make_chart(frame, data):
             points = points.iloc[np.linspace(0, len(points) - 1, 10_000, dtype=int)]
 
         figure, axis = plt.subplots(figsize=(8, 4.5))
-        sns.scatterplot(data=points, x="x", y="y", alpha=0.7, color="#6258e8", ax=axis)
+        sns.scatterplot(data=points, x="x", y="y", alpha=0.7, color="#00FFFF", ax=axis)
         axis.set(title=f"{y_column} vs {x_column}", xlabel=x_column, ylabel=y_column)
         axis.grid(alpha=0.2)
         figure.tight_layout()
@@ -835,7 +848,7 @@ def make_chart(frame, data):
 
         correlations = numeric_data.corr()
         figure, axis = plt.subplots(figsize=(8, 6))
-        sns.heatmap(correlations,annot = True,fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1, ax=axis, cbar_kws={"label": "Correlation"})
+        sns.heatmap(correlations,annot = True,fmt=".2f", cmap="magma", vmin=-1, vmax=1, ax=axis, cbar_kws={"label": "Correlation"})
         axis.set_title("Numeric feature correlation")
         figure.tight_layout()
         return figure, note
@@ -875,7 +888,7 @@ def make_chart(frame, data):
         fig_height = max(6, min(14, n_rows * 0.55))
 
         figure, axis = plt.subplots(figsize=(fig_width, fig_height))
-        sns.heatmap(ct, annot=True, fmt="d", cmap="YlGnBu", ax=axis,
+        sns.heatmap(ct, annot=True, fmt="d", cmap="magma", ax=axis,
                     cbar_kws={"label": "Count"})
         axis.set_title(f"Cross-tabulation: {col1} vs {col2}")
         axis.set_xlabel(col2)
@@ -914,8 +927,8 @@ def make_chart(frame, data):
             plot_data = plot_data.iloc[np.linspace(0, len(plot_data) - 1, 10_000, dtype=int)]
 
         figure, axis = plt.subplots(figsize=(8, 4.5))
-        axis.plot(plot_data["x"], plot_data["y1"], label=y1_column, color="#6258e8", alpha=0.85)
-        axis.plot(plot_data["x"], plot_data["y2"], label=y2_column, color="#f08c52", alpha=0.85)
+        axis.plot(plot_data["x"], plot_data["y1"], label=y1_column, color="#00FFFF", alpha=0.85)
+        axis.plot(plot_data["x"], plot_data["y2"], label=y2_column, color="#FF00FF", alpha=0.85)
         axis.set(title=f"{y1_column} and {y2_column} over {x_column}", xlabel=x_column, ylabel="Value")
         axis.legend()
         axis.grid(alpha=0.2)
