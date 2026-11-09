@@ -93,6 +93,20 @@ function clearMessage() {
     alertBox.hidden = true;
 }
 
+function toast(message, kind = "info") {
+    const container = $("#toast-container");
+    const toast = document.createElement("div");
+    toast.className = `toast ${kind}`;
+    const icons = { success: "✓", error: "✕", info: "ℹ" };
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[kind] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+        <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
 function setStep(activeStep) {
     const steps = ["upload", "clean", "visualize"];
     steps.forEach((name, index) => {
@@ -183,6 +197,7 @@ function renderTable(data) {
 
     const body = $("#table-body");
     body.replaceChildren();
+    const rowFragment = document.createDocumentFragment();
     data.rows.forEach((row) => {
         const tableRow = document.createElement("tr");
         if (state.selectedRows.has(row.id)) tableRow.classList.add("selected");
@@ -204,11 +219,13 @@ function renderTable(data) {
             cell.title = cell.textContent;
             tableRow.append(cell);
         });
-        body.append(tableRow);
+        rowFragment.append(tableRow);
     });
+    body.append(rowFragment);
 
     const statisticsBody = $("#column-statistics-body");
     statisticsBody.replaceChildren();
+    const statsFragment = document.createDocumentFragment();
     (data.column_statistics ?? []).forEach((statistic) => {
         const row = document.createElement("tr");
         const values = [
@@ -229,8 +246,9 @@ function renderTable(data) {
             cell.title = cell.textContent;
             row.append(cell);
         });
-        statisticsBody.append(row);
+        statsFragment.append(row);
     });
+    statisticsBody.append(statsFragment);
 
     $("#page-caption").textContent = `Page ${data.page + 1} of ${data.page_count}`;
     $("#previous-page").disabled = data.page === 0;
@@ -406,7 +424,7 @@ async function applyOutlierAction() {
             remove_rows: "removed rows for",
         };
         trackAction(`Handled outliers in ${column}: ${actionLabels[action] || action}`, "success");
-        showMessage(data.message || "Outliers handled successfully.", "success");
+        toast(data.message || "Outliers handled successfully.", "success");
         $("#outlier-result").innerHTML = '<span class="outlier-empty">Outliers handled. Detect again to verify the updated data.</span>';
     } catch (error) {
         showMessage(error.message);
@@ -494,7 +512,7 @@ async function applyMissingValueAction() {
                 ? `Filled missing values in ${column} with constant value`
                 : `Filled missing values in ${column} using ${action}`;
         trackAction(description, "success");
-        showMessage(data.message || "Missing values handled.", "success");
+        toast(data.message || "Missing values handled.", "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -635,6 +653,7 @@ function renderDataQuality(data) {
 function renderFeatures(columns) {
     const list = $("#feature-list");
     list.replaceChildren();
+    const featureFragment = document.createDocumentFragment();
     columns.forEach((column) => {
         const label = document.createElement("label");
         label.className = "feature-option";
@@ -650,8 +669,9 @@ function renderFeatures(columns) {
         name.textContent = column;
         name.title = column;
         label.append(checkbox, name);
-        list.append(label);
+        featureFragment.append(label);
     });
+    list.append(featureFragment);
     updateColumnActions();
 }
 
@@ -789,7 +809,7 @@ async function uploadFile(file) {
         setStep("clean");
         $("#chart-result").innerHTML = '<div class="chart-empty"><div class="chart-empty-icon" aria-hidden="true">⌁</div><strong>Your next insight starts here</strong><span>Pick a chart and create a visualization.</span></div>';
         trackAction(`Uploaded ${file.name} — ${formatNumber(data.row_count)} rows, ${formatNumber(data.column_count)} columns`, "info");
-        showMessage(`Loaded ${formatNumber(data.row_count)} rows and ${formatNumber(data.column_count)} columns.`, "success");
+        toast(`Loaded ${formatNumber(data.row_count)} rows and ${formatNumber(data.column_count)} columns.`, "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -816,7 +836,7 @@ async function downloadModifiedCSV() {
         a.remove();
         URL.revokeObjectURL(url);
         trackAction("Downloaded the modified CSV", "info");
-        showMessage("Modified CSV downloaded.", "success");
+        toast("Modified CSV downloaded.", "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -840,7 +860,7 @@ async function changeRows(action) {
         state.selectedRows.clear();
         renderTable(data);
         trackAction(action === "keep" ? `Kept ${ids.length} selected row${ids.length === 1 ? "" : "s"}` : `Deleted ${ids.length} selected row${ids.length === 1 ? "" : "s"}`, "success");
-        showMessage(action === "keep" ? "Kept the selected rows." : "Deleted the selected rows.", "success");
+        toast(action === "keep" ? "Kept the selected rows." : "Deleted the selected rows.", "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -864,7 +884,7 @@ async function changeColumns(action) {
         state.selectedColumns.clear();
         renderTable(data);
         trackAction(action === "keep" ? `Kept columns: ${columns.join(", ")}` : `Deleted columns: ${columns.join(", ")}`, "success");
-        showMessage(action === "keep" ? "Kept the selected columns." : "Removed the selected columns.", "success");
+        toast(action === "keep" ? "Kept the selected columns." : "Removed the selected columns.", "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -905,16 +925,38 @@ async function createChart() {
     container.replaceChildren();
     const crosstabContainer = $("#crosstab-table-container");
     if (crosstabContainer) crosstabContainer.hidden = true;
+
+    // Loading skeleton
+    const skeleton = document.createElement("div");
+    skeleton.className = "chart-skeleton";
+    skeleton.innerHTML = '<div class="skeleton-pulse"></div><div class="skeleton-pulse"></div><div class="skeleton-pulse"></div>';
+    container.append(skeleton);
     try {
         const result = await api("/api/plot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
+        container.replaceChildren();
         const image = document.createElement("img");
         image.src = result.image;
         image.alt = `${type} chart`;
+        image.className = `chart-image chart-${type}`;
         container.append(image);
+
+        // Download chart button
+        const downloadBtn = document.createElement("button");
+        downloadBtn.className = "button button-primary chart-download";
+        downloadBtn.textContent = "↓ Download chart";
+        downloadBtn.onclick = () => {
+            const link = document.createElement("a");
+            link.href = result.image;
+            link.download = `eeda-chart-${type}.png`;
+            link.click();
+            toast("Chart downloaded.", "success");
+        };
+        container.append(downloadBtn);
+
         if (result.note) {
             const note = document.createElement("p");
             note.className = "chart-note";
@@ -931,6 +973,7 @@ async function createChart() {
             if (crosstabContainer) crosstabContainer.hidden = true;
         }
     } catch (error) {
+        container.replaceChildren();
         showMessage(error.message);
     } finally {
         button.disabled = false;
@@ -1055,7 +1098,7 @@ async function undoLastAction() {
         state.selectedColumns.clear();
         renderTable(data);
         trackAction(data.undone_action ? `Undid: ${data.undone_action}` : "Undid last action", "info");
-        showMessage(data.message || "Undid the last action.", "success");
+        toast(data.message || "Undid the last action.", "success");
     } catch (error) {
         showMessage(error.message);
     }
