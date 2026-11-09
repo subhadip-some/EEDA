@@ -119,6 +119,19 @@ You can now upload a CSV file and start exploring your dataset.
 
 To stop the application, press `Ctrl + C` in the terminal.
 
+## Code Structure
+
+- `app.py` is the development and WSGI entry point.
+- `eeda_app/__init__.py` builds the Flask app and registers the blueprints.
+- `eeda_app/core.py` contains dataset state and reusable dataframe/statistics helpers.
+- `eeda_app/datasets.py` handles page routes and CSV upload, download, and retrieval.
+- `eeda_app/edits.py` handles missing values, row/column edits, and undo.
+- `eeda_app/analysis.py` handles outlier operations and cross-tabulation.
+- `eeda_app/charts.py` contains chart generation and the plot endpoint.
+
+Keep API paths and response shapes stable when moving route handlers so the
+frontend can continue to call them without changes.
+
 ---
 
 ## A Typical Student Workflow
@@ -157,7 +170,14 @@ Charts are exploratory aids. Correlation does not establish causation, and visua
 ```text
 EEDA/
 │
-├── app.py                  # Flask application and backend logic
+├── app.py                  # Development and WSGI entry point
+├── eeda_app/
+│   ├── __init__.py         # Flask app factory and blueprint registration
+│   ├── core.py             # Dataset state and dataframe helpers
+│   ├── datasets.py         # Upload, download, and data retrieval
+│   ├── edits.py            # Data edits and undo
+│   ├── analysis.py         # Outlier operations and cross-tabulation
+│   └── charts.py           # Chart generation
 ├── requirements.txt        # Python dependencies
 │
 ├── templates/
