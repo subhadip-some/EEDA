@@ -291,6 +291,7 @@ function renderAnalysis(data) {
     renderColumnTypes(data);
     renderDataQuality(data);
     renderMissingValueControls(data);
+    renderOneHotControls(data);
     renderOutlierControls(data);
 }
 
@@ -460,6 +461,47 @@ function renderMissingValueControls(data) {
     updateMissingActions();
 }
 
+function renderOneHotControls(data) {
+    const columnSelect = $("#onehot-columns");
+    const encodeButton = $("#apply-onehot-encoding");
+    if (!columnSelect || !encodeButton) return;
+    $("#encoding-result").hidden = true;
+
+    const previousColumns = new Set(
+        [...columnSelect.selectedOptions].map((option) => option.value)
+    );
+    const columns = data.categorical_columns ?? [];
+    columnSelect.replaceChildren();
+
+    columns.forEach((column) => {
+        const option = document.createElement("option");
+        option.value = column;
+        option.textContent = column;
+        option.selected = previousColumns.has(column);
+        columnSelect.append(option);
+    });
+
+    if (columns.length === 0) {
+        const option = document.createElement("option");
+        option.textContent = "No categorical columns";
+        option.value = "";
+        option.disabled = true;
+        columnSelect.append(option);
+    }
+
+    encodeButton.disabled = columns.length === 0;
+    encodeButton.textContent = $("#encoding-method").value === "label"
+        ? "Label encode"
+        : "One-hot encode";
+}
+
+function updateEncodingMethod() {
+    const method = $("#encoding-method").value;
+    $("#apply-onehot-encoding").textContent = method === "label"
+        ? "Label encode"
+        : "One-hot encode";
+}
+
 function updateMissingActions() {
     const column = $("#missing-column").value;
     const actionSelect = $("#missing-action");
@@ -513,6 +555,39 @@ async function applyMissingValueAction() {
                 : `Filled missing values in ${column} using ${action}`;
         trackAction(description, "success");
         toast(data.message || "Missing values handled.", "success");
+    } catch (error) {
+        showMessage(error.message);
+    }
+}
+
+async function encodeCategoricalColumns() {
+    if (!state.datasetId) return;
+    const columns = [...$("#onehot-columns").selectedOptions].map((option) => option.value);
+    const method = $("#encoding-method").value;
+    if (columns.length === 0) {
+        showMessage("Select at least one categorical column to encode.");
+        return;
+    }
+
+    clearMessage();
+    try {
+        const data = await api("/api/encode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataset_id: state.datasetId, columns, method }),
+        });
+        state.selectedRows.clear();
+        state.selectedColumns.clear();
+        renderTable(data);
+        trackAction(`${method === "label" ? "Label" : "One-hot"} encoded columns: ${columns.join(", ")}`, "success");
+        $("#encoding-message").textContent = data.message || "Categorical columns encoded.";
+        const mapDetails = $("#encoding-map-details");
+        mapDetails.hidden = method !== "label";
+        if (method === "label") {
+            $("#encoding-map").textContent = JSON.stringify(data.encoding_map, null, 2);
+        }
+        $("#encoding-result").hidden = false;
+        toast(data.message || "Categorical columns encoded.", "success");
     } catch (error) {
         showMessage(error.message);
     }
@@ -707,7 +782,7 @@ function updateChartOptions() {
         values = usable;
         pairValues = usable;
     } else {
-        values = type === "count"
+        values = (type === "count" || type === "pie")
             ? state.columns
             : (state.numericColumns.length ? state.numericColumns : state.columns);
         pairValues = values;
@@ -898,7 +973,7 @@ async function createChart() {
     }
     const type = $("#chart-type").value;
     const payload = { dataset_id: state.datasetId, type };
-    if (["histogram", "violin", "count", "box"].includes(type)) {
+    if (["histogram", "violin", "count", "box", "pie"].includes(type)) {
         payload.column = $("#primary-column").value;
     }
     if (type === "scatter") {
@@ -1122,6 +1197,8 @@ $("#keep-columns").addEventListener("click", () => changeColumns("keep"));
 $("#missing-column").addEventListener("change", updateMissingActions);
 $("#missing-action").addEventListener("change", updateMissingConstantField);
 $("#apply-missing-value").addEventListener("click", applyMissingValueAction);
+$("#apply-onehot-encoding").addEventListener("click", encodeCategoricalColumns);
+$("#encoding-method").addEventListener("change", updateEncodingMethod);
 $("#outlier-method").addEventListener("change", updateOutlierSettings);
 $("#detect-outliers").addEventListener("click", detectOutliers);
 $("#apply-outlier-action").addEventListener("click", applyOutlierAction);

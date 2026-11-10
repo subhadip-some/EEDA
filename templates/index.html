@@ -227,6 +227,36 @@
             </div>
           </div>
 
+          <div class="feature-card" id="one-hot-encoding-card">
+            <div class="feature-heading">
+              <div>
+                <div class="table-title"><span class="table-spark">✳</span><strong>Encode categorical columns</strong></div>
+                <p class="section-description">Label encoding assigns numbers to categories and may imply a false order. One-hot encoding creates 0/1 indicator columns.</p>
+              </div>
+            </div>
+            <div class="encoding-controls">
+              <label class="control-field encoding-method-field">
+                <span>METHOD</span>
+                <select id="encoding-method">
+                  <option value="onehot">One-hot encoding</option>
+                  <option value="label">Label encoding</option>
+                </select>
+              </label>
+              <label class="control-field encoding-columns-field">
+                <span>CATEGORICAL COLUMNS (CTRL/COMMAND TO SELECT MULTIPLE)</span>
+                <select id="onehot-columns" multiple size="4" aria-label="Select categorical columns to encode"></select>
+              </label>
+              <button class="button button-primary" id="apply-onehot-encoding" type="button">Encode columns</button>
+            </div>
+            <div id="encoding-result" class="encoding-result" role="status" hidden>
+              <p id="encoding-message"></p>
+              <details id="encoding-map-details" hidden>
+                <summary>View label codes</summary>
+                <pre id="encoding-map"></pre>
+              </details>
+            </div>
+          </div>
+
           <div class="feature-card" id="outlier-detection-card">
             <div class="feature-heading">
               <div>
@@ -303,6 +333,7 @@
                   <option value="histogram">Histogram + KDE</option>
                   <option value="violin">Violin plot</option>
                   <option value="count">Count plot</option>
+                  <option value="pie">Pie plot (percentages)</option>
                   <option value="box">Box plot (one column)</option>
                   <option value="box_all">Box plot (all numeric columns)</option>
                   <option value="scatter">Scatter plot</option>
@@ -402,6 +433,18 @@
                     <div class="guide-card-meta">
                       <span class="guide-chip">Works with: any column</span>
                       <span class="guide-chip">Best for: categorical</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card pie">
+                  <div class="guide-card-icon">🥧</div>
+                  <div class="guide-card-body">
+                    <strong>Pie plot</strong>
+                    <span class="guide-card-desc">Shows the percentage share of each value in a selected column, useful for quick composition comparisons.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: any column</span>
+                      <span class="guide-chip">Best for: proportions</span>
                     </div>
                   </div>
                 </article>

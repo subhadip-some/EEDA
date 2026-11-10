@@ -10,6 +10,7 @@ from .core import (
     error_response,
     find_dataset,
     make_dataset_response,
+    make_json_value,
     push_undo_action,
     undo_stacks,
 )
@@ -204,4 +205,68 @@ def undo_last_action():
     response = make_dataset_response(dataset_id, datasets[dataset_id])
     response["message"] = f"Undid: {entry['description']}"
     response["undone_action"] = entry["description"]
+    return jsonify(response)
+
+@blueprint.post("/api/encode")
+def encode_categorical_columns():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return error_response("A JSON encoding request is required.", 400)
+
+    method = data.get("method", "onehot")
+    if method not in ("onehot", "label"):
+        return error_response("Choose one-hot or label encoding.", 400)
+
+    dataset_id = data.get("dataset_id")
+    frame = find_dataset(dataset_id)
+    if frame is None:
+        return error_response("Dataset not found. Upload it again to continue.", 404)
+
+    columns = data.get("columns")
+    if not isinstance(columns, list) or not columns:
+        return error_response("Select at least one categorical column to encode.", 400)
+    if any(not isinstance(column, str) for column in columns):
+        return error_response("Selected column names are invalid.", 400)
+
+    columns = list(dict.fromkeys(columns))
+    categorical_columns = set(frame.select_dtypes(exclude="number").columns)
+    if any(column not in categorical_columns for column in columns):
+        return error_response("Choose only categorical columns from this dataset.", 400)
+
+    updated_frame = frame.copy()
+    encoding_map = {}
+    if method == "onehot":
+        updated_frame = pd.get_dummies(updated_frame, columns=columns, dtype=int)
+        description = f"One-hot encoded columns: {', '.join(columns)}"
+        message = f"One-hot encoded {len(columns)} categorical column{'s' if len(columns) != 1 else ''}."
+    else:
+        for column in columns:
+            codes, categories = pd.factorize(frame[column], sort=False)
+            updated_frame[column] = pd.Series(
+                codes,
+                index=frame.index,
+            ).mask(codes == -1).astype("Int64")
+            encoding_map[column] = [
+                {"category": make_json_value(category), "code": code}
+                for code, category in enumerate(categories)
+            ]
+        description = f"Label encoded columns: {', '.join(columns)}"
+        message = (
+            f"Label encoded {len(columns)} categorical column{'s' if len(columns) != 1 else ''}. "
+            "Codes use first-seen category order; missing values remain missing."
+        )
+
+    push_undo_action(
+        dataset_id,
+        description,
+        frame,
+    )
+    datasets[dataset_id] = updated_frame
+    _invalidate_column_cache(dataset_id)
+    _invalidate_stats_cache(dataset_id)
+
+    response = make_dataset_response(dataset_id, updated_frame)
+    response["message"] = message
+    if method == "label":
+        response["encoding_map"] = encoding_map
     return jsonify(response)

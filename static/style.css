@@ -990,17 +990,73 @@ input[type="checkbox"] {
     margin-bottom: 0;
 }
 
-.missing-value-controls {
+.missing-value-controls,
+.encoding-controls {
     display: flex;
     align-items: end;
     gap: 12px;
     margin-top: 14px;
 }
 
+.encoding-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.8fr);
+    grid-template-areas:
+        "columns method"
+        "columns action";
+    align-items: start;
+    gap: 14px 24px;
+}
+
 .missing-value-controls .button {
     height: 34px;
     margin-bottom: 0;
     white-space: nowrap;
+}
+
+.encoding-controls .control-field {
+    min-width: 0;
+}
+
+.encoding-method-field {
+    grid-area: method;
+}
+
+.encoding-columns-field {
+    grid-area: columns;
+}
+
+.encoding-controls .button {
+    grid-area: action;
+    justify-self: start;
+    min-height: 36px;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+#onehot-columns {
+    min-height: 120px;
+    height: 120px;
+    padding: 6px 10px;
+}
+
+.encoding-result {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.encoding-result p {
+    margin: 0 0 8px;
+}
+
+.encoding-result pre {
+    max-height: 220px;
+    overflow: auto;
+    padding: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    white-space: pre-wrap;
 }
 
 .outlier-controls {
@@ -1651,6 +1707,10 @@ input[type="checkbox"] {
         flex-wrap: wrap;
     }
 
+    .encoding-controls {
+        grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr);
+    }
+
     .outlier-controls {
         grid-template-columns: repeat(2, minmax(140px, 1fr));
     }
@@ -1827,6 +1887,18 @@ input[type="checkbox"] {
 
     .control-field {
         min-width: 0;
+    }
+
+    .encoding-controls {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "method"
+            "columns"
+            "action";
+    }
+
+    .encoding-controls .button {
+        justify-self: stretch;
     }
 
     .plot-button {

@@ -119,6 +119,40 @@ def make_chart(frame, data):
         figure.tight_layout()
         return figure, note
 
+    if chart_type == "pie":
+        column = data.get("column")
+        if not isinstance(column, str) or column not in frame.columns:
+            raise ValueError("Choose a valid column for the pie plot.")
+
+        counts = frame[column].value_counts(dropna=False)
+        if counts.empty:
+            raise ValueError("This column has no values to count.")
+
+        note = ""
+        if len(counts) > 10:
+            counts = counts.head(10)
+            note = "Showing the 10 most frequent values."
+
+        labels = ["Missing" if pd.isna(value) else str(value) for value in counts.index]
+        values = counts.to_numpy(dtype=float)
+        figure, axis = plt.subplots(figsize=(8, 6))
+        _, _, autotexts = axis.pie(
+            values,
+            labels=labels,
+            autopct="%1.1f%%",
+            startangle=90,
+            counterclock=False,
+            wedgeprops={"edgecolor": "#0D0D0D", "linewidth": 1.2},
+            colors=sns.color_palette("viridis", n_colors=len(values)),
+        )
+        axis.set_title(f"Share of values in {column}")
+        axis.axis("equal")
+        for text in autotexts:
+            text.set_color("#D1D5DB")
+            text.set_fontsize(9)
+        figure.tight_layout()
+        return figure, note
+
     if chart_type in ("scatter", "relationship"):
         x_column = data.get("x")
         y_column = data.get("y")
@@ -246,7 +280,7 @@ def make_chart(frame, data):
         figure.tight_layout()
         return figure, ""
 
-    raise ValueError("Choose histogram, violin, count, box, box-all, scatter, relationship, heatmap, crosstab, or line.")
+    raise ValueError("Choose histogram, violin, count, pie, box, box-all, scatter, relationship, heatmap, crosstab, or line.")
 
 
 @blueprint.post("/api/plot")
