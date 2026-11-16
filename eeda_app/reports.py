@@ -32,6 +32,7 @@ from .core import (
     original_files,
     undo_stacks,
 )
+from .planning import plans
 
 
 blueprint = Blueprint("reports", __name__)
@@ -380,6 +381,29 @@ def build_report_pdf(frame, dataset_name, report_data, selected_charts, actions)
         story.append(Paragraph(
             "No data-cleaning or preprocessing actions are recorded for this dataset.",
             styles["ReportBody"],
+        ))
+
+    story.append(Paragraph("6. EDA Plan Progress", styles["SectionHeading"]))
+    plan = plans.get(report_data["dataset_id"])
+    if plan and plan["items"]:
+        plan_items = list(plan["items"].values())
+        done = sum(1 for item in plan_items if item["done"])
+        total = len(plan_items)
+        story.append(Paragraph(
+            f"<b>Plan progress:</b> {done} of {total} steps completed "
+            f"({round((done / total * 100) if total else 0)}%).",
+            styles["ReportBody"],
+        ))
+        for item in plan_items:
+            status = "&#10003;" if item["done"] else "&#10007;"
+            kind_label = f" [{item['kind']}]" if item["kind"] == "recommendation" else ""
+            story.append(Paragraph(
+                f"{status} &nbsp; {_report_text(item['text'])}{kind_label}",
+                styles["ReportBody"],
+            ))
+    else:
+        story.append(Paragraph(
+            "No EDA plan was created for this dataset.", styles["ReportBody"],
         ))
 
     story.append(Paragraph("7. Key Findings", styles["SectionHeading"]))

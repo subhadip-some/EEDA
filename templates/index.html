@@ -52,6 +52,7 @@
       <header class="topbar">
         <div class="breadcrumb">Workspace <span>/</span> <strong>Untitled analysis</strong></div>
         <a class="guide-link" href="/guide.txt" target="_blank" rel="noreferrer"><span aria-hidden="true">?</span> Quick guide</a>
+        <button class="plan-toggle-btn" id="toggle-planning-sidebar" type="button" aria-label="Open EDA plan sidebar" title="Open EDA plan sidebar"><span class="plan-icon">📁</span> <span>PLAN</span></button>
       </header>
 
       <div class="content-wrap">
@@ -529,6 +530,54 @@
         <footer class="page-footer"><span>Made for curious minds.</span><span>FIELDNOTE <span class="footer-dot">✳</span></span></footer>
       </div>
     </main>
+
+    <aside class="right-sidebar" id="planning-sidebar" hidden>
+      <button class="sidebar-close" id="close-planning-sidebar" type="button" aria-label="Close EDA plan sidebar">✕</button>
+      <div class="right-sidebar-inner">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">STEP 00 <span>·</span> PLAN BEFORE YOU EXECUTE</span>
+            <h2>Plan your EDA process</h2>
+            <p class="section-description">Structure your exploratory data analysis before running it. Track each step as a checklist.</p>
+          </div>
+          <div class="plan-progress">
+            <span class="plan-progress-label">Progress</span>
+            <span class="plan-progress-value" id="plan-progress-value">0%</span>
+          </div>
+          <div class="plan-progress-bar" role="progressbar" aria-label="Plan completion">
+            <div class="plan-progress-fill" id="plan-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-heading">
+            <div>
+              <div class="table-title"><span class="table-spark">✳</span><strong>EDA plan checklist</strong></div>
+              <p class="section-description">Mark steps as you complete them. Click an item to jump to the matching tool.</p>
+            </div>
+            <div class="feature-actions">
+              <button class="button button-secondary" id="generate-plan-recommendations" type="button">Generate recommendations</button>
+            </div>
+          </div>
+          <div class="plan-list" id="plan-list" aria-label="EDA plan items">
+            <p class="plan-empty">No plan items yet. Generate recommendations or add your own step below.</p>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-heading">
+            <div>
+              <div class="table-title"><span class="table-spark">✳</span><strong>Add a custom step</strong></div>
+              <p class="section-description">Enter your own EDA step to track.</p>
+            </div>
+          </div>
+          <div class="plan-add-controls">
+            <input id="plan-new-item" type="text" placeholder="e.g. Check distribution of salary" maxlength="500">
+            <button class="button button-primary" id="add-plan-item" type="button">Add step</button>
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
   <dialog class="report-dialog" id="report-dialog" aria-labelledby="report-dialog-title">
     <form class="report-form" id="report-form">
