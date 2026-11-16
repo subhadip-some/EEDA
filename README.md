@@ -19,7 +19,7 @@ The goal is simple: spend less time writing analysis code and more time understa
 - **Action tracking:** Undo edits, compare states, and reset the working dataset.
 - **Visualization tools:** Generate histograms, KDE plots, violin plots, box plots, count plots, scatter plots, line charts, and correlation heatmaps.
 - **Outlier handling:** Detect and treat outliers using common statistical methods.
-- **Export:** Download the processed dataset as a CSV file.
+- **Export:** Download the processed dataset as a CSV file or generate a PDF EDA report with dataset statistics, cleaning history, and selected charts.
 
 ### Typical workflow
 
@@ -28,7 +28,8 @@ The goal is simple: spend less time writing analysis code and more time understa
 3. Inspect column types and summary statistics.
 4. Clean and prepare the data as needed.
 5. Explore relationships and distributions with charts.
-6. Interpret the results and export the cleaned dataset.
+6. Generate an EDA report with your objective, chart interpretations, and recommendations.
+7. Interpret the results and export the cleaned dataset.
 
 ---
 

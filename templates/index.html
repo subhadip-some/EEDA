@@ -324,6 +324,7 @@
               <h2>Make it visual</h2>
               <p class="section-description">Choose a view to reveal distributions and relationships in your data.</p>
             </div>
+            <button class="button button-secondary" id="generate-report" type="button">Generate EDA Report</button>
           </div>
           <div class="chart-card">
             <div class="chart-controls">
@@ -529,6 +530,45 @@
       </div>
     </main>
   </div>
+  <dialog class="report-dialog" id="report-dialog" aria-labelledby="report-dialog-title">
+    <form class="report-form" id="report-form">
+      <div class="report-dialog-heading">
+        <div>
+          <span class="section-kicker">EXPORT <span>·</span> PDF REPORT</span>
+          <h2 id="report-dialog-title">Generate EDA Report</h2>
+          <p>Dataset details and statistics are collected from your current working data.</p>
+        </div>
+        <button class="text-button" id="close-report-dialog" type="button" aria-label="Close report form">×</button>
+      </div>
+      <label class="report-field">
+        <span>ANALYSIS TITLE</span>
+        <input id="report-title" name="title" type="text" maxlength="2000" placeholder="Exploratory Data Analysis Report">
+      </label>
+      <label class="report-field">
+        <span>OBJECTIVE OF THE ANALYSIS</span>
+        <textarea id="report-objective" name="objective" rows="3" maxlength="10000" placeholder="What are you investigating or hoping to discover?"></textarea>
+      </label>
+      <label class="report-field">
+        <span>DATASET DESCRIPTION <em>OPTIONAL</em></span>
+        <textarea id="report-description" name="dataset_description" rows="3" maxlength="10000" placeholder="Add context about the source or meaning of this dataset."></textarea>
+      </label>
+      <fieldset class="report-charts-field">
+        <legend>CHARTS <em>SELECT ANY TO INCLUDE</em></legend>
+        <div id="report-chart-list" class="report-chart-list">
+          <p class="report-chart-empty">Create charts in the visualization panel to add them to your report.</p>
+        </div>
+      </fieldset>
+      <label class="report-field">
+        <span>ADDITIONAL OBSERVATIONS AND RECOMMENDATIONS <em>OPTIONAL</em></span>
+        <textarea id="report-observations" name="observations" rows="4" maxlength="10000" placeholder="Record your findings, interpretation, or suggested next steps."></textarea>
+      </label>
+      <p class="report-error" id="report-error" role="alert" hidden></p>
+      <div class="report-form-actions">
+        <button class="button button-subtle" id="cancel-report" type="button">Cancel</button>
+        <button class="button button-primary" id="download-report" type="submit">Generate PDF</button>
+      </div>
+    </form>
+  </dialog>
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 </html>

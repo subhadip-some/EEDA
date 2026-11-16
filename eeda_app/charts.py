@@ -1,5 +1,6 @@
 import base64
 import io
+import uuid
 
 import matplotlib
 
@@ -11,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 from flask import Blueprint, jsonify, request
 
-from .core import detect_identifier_columns, error_response, find_dataset
+from .core import chart_history, detect_identifier_columns, error_response, find_dataset
 
 plt.style.use("dark_background")
 sns.set_theme(style="darkgrid", rc={
@@ -305,8 +306,52 @@ def create_plot():
         if figure is not None:
             plt.close(figure)
 
-    encoded_image = base64.b64encode(image_buffer.getvalue()).decode("ascii")
+    image_bytes = image_buffer.getvalue()
+    chart_id = uuid.uuid4().hex
+    chart_label = _chart_label(data)
+    chart_history.setdefault(dataset_id, []).append({
+        "id": chart_id,
+        "label": chart_label,
+        "image": image_bytes,
+    })
+    encoded_image = base64.b64encode(image_bytes).decode("ascii")
     return jsonify({
         "image": f"data:image/png;base64,{encoded_image}",
+        "chart_id": chart_id,
+        "chart_label": chart_label,
         "note": note,
     })
+
+
+def _chart_label(data):
+    chart_type = data.get("type", "Chart")
+    labels = {
+        "histogram": "Histogram + KDE",
+        "violin": "Violin plot",
+        "count": "Count plot",
+        "pie": "Pie plot",
+        "box": "Box plot",
+        "box_all": "Box plots for all numeric columns",
+        "scatter": "Scatter plot",
+        "relationship": "Relationship chart",
+        "heatmap": "Correlation heatmap",
+        "crosstab": "Cross-tabulation",
+        "line": "Line graph",
+    }
+    label = labels.get(chart_type, "Chart")
+    column = data.get("column")
+    if isinstance(column, str):
+        return f"{label}: {column}"
+    x_column = data.get("x")
+    y_column = data.get("y")
+    if isinstance(x_column, str) and isinstance(y_column, str):
+        return f"{label}: {y_column} vs {x_column}"
+    column1 = data.get("column1")
+    column2 = data.get("column2")
+    if isinstance(column1, str) and isinstance(column2, str):
+        return f"{label}: {column1} vs {column2}"
+    y1_column = data.get("y1")
+    y2_column = data.get("y2")
+    if all(isinstance(value, str) for value in (x_column, y1_column, y2_column)):
+        return f"{label}: {y1_column} and {y2_column} over {x_column}"
+    return label

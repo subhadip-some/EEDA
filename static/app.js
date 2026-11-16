@@ -11,6 +11,8 @@ const state = {
     selectedRows: new Set(),
     selectedColumns: new Set(),
     actions: [],
+    charts: [],
+    datasetName: "",
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -873,9 +875,16 @@ async function uploadFile(file) {
     try {
         const data = await api("/api/upload", { method: "POST", body: formData });
         state.datasetId = data.dataset_id;
+        state.datasetName = file.name;
+        state.charts = [];
+        $("#report-title").value = "";
+        $("#report-objective").value = "";
+        $("#report-description").value = "";
+        $("#report-observations").value = "";
         state.selectedRows.clear();
         state.selectedColumns.clear();
         state.actions = [];
+        renderReportCharts();
         $("#data-panel").hidden = false;
         $("#analysis-panel").hidden = false;
         $("#chart-panel").hidden = false;
@@ -1001,10 +1010,9 @@ async function createChart() {
     const crosstabContainer = $("#crosstab-table-container");
     if (crosstabContainer) crosstabContainer.hidden = true;
 
-    // Loading skeleton
     const skeleton = document.createElement("div");
     skeleton.className = "chart-skeleton";
-    skeleton.innerHTML = '<div class="skeleton-pulse"></div><div class="skeleton-pulse"></div><div class="skeleton-pulse"></div>';
+    skeleton.textContent = "Generating chart...";
     container.append(skeleton);
     try {
         const result = await api("/api/plot", {
@@ -1012,6 +1020,12 @@ async function createChart() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
+        state.charts.push({
+            id: result.chart_id,
+            label: result.chart_label,
+            image: result.image,
+        });
+        renderReportCharts();
         container.replaceChildren();
         const image = document.createElement("img");
         image.src = result.image;
@@ -1053,6 +1067,139 @@ async function createChart() {
     } finally {
         button.disabled = false;
         button.innerHTML = '<span aria-hidden="true">✳</span> Create chart';
+    }
+}
+
+function renderReportCharts() {
+    const list = $("#report-chart-list");
+    if (!list) return;
+    list.replaceChildren();
+    if (state.charts.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "report-chart-empty";
+        empty.textContent = "Create charts in the visualization panel to add them to your report.";
+        list.append(empty);
+        return;
+    }
+
+    state.charts.forEach((chart, index) => {
+        const item = document.createElement("article");
+        item.className = "report-chart-item";
+        const image = document.createElement("img");
+        image.className = "report-chart-preview";
+        image.src = chart.image;
+        image.alt = `Preview of ${chart.label}`;
+
+        const fields = document.createElement("div");
+        fields.className = "report-chart-fields";
+        const selectLabel = document.createElement("label");
+        selectLabel.className = "report-chart-select";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "report-chart-checkbox";
+        checkbox.value = chart.id;
+        checkbox.setAttribute("aria-label", `Include ${chart.label}`);
+        const chartName = document.createElement("span");
+        chartName.textContent = chart.label;
+        selectLabel.append(checkbox, chartName);
+
+        const titleLabel = document.createElement("label");
+        titleLabel.className = "report-field";
+        const titleCaption = document.createElement("span");
+        titleCaption.textContent = "REPORT TITLE";
+        const titleInput = document.createElement("input");
+        titleInput.className = "report-chart-title";
+        titleInput.type = "text";
+        titleInput.maxLength = 500;
+        titleInput.value = chart.label || `Chart ${index + 1}`;
+        titleLabel.append(titleCaption, titleInput);
+
+        const observationLabel = document.createElement("label");
+        observationLabel.className = "report-field";
+        const observationCaption = document.createElement("span");
+        observationCaption.textContent = "OBSERVATION";
+        const observationInput = document.createElement("textarea");
+        observationInput.className = "report-chart-observation";
+        observationInput.rows = 2;
+        observationInput.maxLength = 10000;
+        observationInput.placeholder = "Optional interpretation for this chart.";
+        observationLabel.append(observationCaption, observationInput);
+        fields.append(selectLabel, titleLabel, observationLabel);
+        item.append(image, fields);
+        list.append(item);
+    });
+}
+
+function openReportDialog() {
+    if (!state.datasetId) {
+        showMessage("Please upload a CSV dataset before generating a report.", "error");
+        return;
+    }
+    const title = $("#report-title");
+    if (!title.value.trim()) {
+        title.value = `${state.datasetName.replace(/\.[^.]+$/, "")} EDA Report`;
+    }
+    $("#report-error").hidden = true;
+    renderReportCharts();
+    $("#report-dialog").showModal();
+}
+
+async function submitReport(event) {
+    event.preventDefault();
+    if (!state.datasetId) return;
+    const errorElement = $("#report-error");
+    errorElement.hidden = true;
+    const charts = [...document.querySelectorAll(".report-chart-checkbox:checked")].map((checkbox) => {
+        const item = checkbox.closest(".report-chart-item");
+        return {
+            id: checkbox.value,
+            title: item.querySelector(".report-chart-title").value,
+            observation: item.querySelector(".report-chart-observation").value,
+        };
+    });
+    const payload = {
+        dataset_id: state.datasetId,
+        title: $("#report-title").value,
+        objective: $("#report-objective").value,
+        dataset_description: $("#report-description").value,
+        observations: $("#report-observations").value,
+        charts,
+    };
+    const button = $("#download-report");
+    button.disabled = true;
+    button.textContent = "Generating PDF…";
+    try {
+        const response = await fetch("/api/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            const contentType = response.headers.get("content-type") || "";
+            const body = contentType.includes("application/json")
+                ? await response.json()
+                : {};
+            throw new Error(body.error || `Report generation failed (${response.status}).`);
+        }
+        const pdf = await response.blob();
+        const url = URL.createObjectURL(pdf);
+        const link = document.createElement("a");
+        const disposition = response.headers.get("content-disposition") || "";
+        const filename = disposition.match(/filename="?([^";]+)"?/);
+        link.href = url;
+        link.download = filename ? filename[1] : "eeda-report.pdf";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        $("#report-dialog").close();
+        toast("EDA report downloaded.", "success");
+    } catch (error) {
+        errorElement.textContent = error.message;
+        errorElement.hidden = false;
+    } finally {
+        button.disabled = false;
+        button.textContent = "Generate PDF";
     }
 }
 
@@ -1207,6 +1354,10 @@ $("#primary-column").addEventListener("change", () => updateChartOptions());
 $("#secondary-column").addEventListener("change", () => updateChartOptions());
 $("#tertiary-column").addEventListener("change", () => updateChartOptions());
 $("#plot-button").addEventListener("click", createChart);
+$("#generate-report").addEventListener("click", openReportDialog);
+$("#report-form").addEventListener("submit", submitReport);
+$("#close-report-dialog").addEventListener("click", () => $("#report-dialog").close());
+$("#cancel-report").addEventListener("click", () => $("#report-dialog").close());
 
 $("#guide-toggle").addEventListener("click", () => {
     const body = $("#chart-guide-body");

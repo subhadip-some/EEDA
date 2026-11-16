@@ -14,7 +14,6 @@
     --shadow-neon: 0 0 20px rgba(0, 255, 255, 0.25);
     --glass-bg: rgba(255, 255, 255, 0.62);
     --glass-border: rgba(255, 255, 255, 0.45);
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: "DM Sans", "Segoe UI", sans-serif;
     color: var(--ink);
     background: var(--paper);
@@ -61,8 +60,6 @@ button:disabled {
     padding: 31px 21px 22px;
     background: #fff;
     border-right: 1px solid #eceef1;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-left: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -315,8 +312,6 @@ button:disabled {
     padding: 0 5.4%;
     border-bottom: 1px solid #eaecf0;
     background: rgba(255, 255, 255, .62);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -439,8 +434,6 @@ h1 {
     border-radius: 10px;
     background: var(--white);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid rgba(255, 255, 255, 0.5);
     border-left: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -532,11 +525,9 @@ h2 {
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: background .15s ease, transform .15s ease;
 }
 
 .file-picker:hover {
-    transform: translateY(-1px);
     background: var(--violet-dark);
 }
 
@@ -592,8 +583,6 @@ h2 {
     border: 1px solid #e9ebee;
     border-radius: 8px;
     background: #fff;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid rgba(255, 255, 255, 0.5);
     border-left: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -603,7 +592,6 @@ h2 {
 .chart-card:hover,
 .feature-card:hover,
 .stat-card:hover {
-    transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(34, 40, 54, 0.08);
 }
 
@@ -645,8 +633,6 @@ h2 {
     border-radius: 8px;
     background: #fff;
     box-shadow: var(--shadow);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid rgba(255, 255, 255, 0.5);
     border-left: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -763,7 +749,6 @@ h2 {
     border-radius: 5px;
     font-size: 9px;
     font-weight: 600;
-    transition: var(--transition);
     white-space: nowrap;
 }
 
@@ -783,7 +768,6 @@ h2 {
 }
 
 .button:active:not(:disabled) {
-    transform: translateY(0) scale(0.97);
 }
 
 .button-subtle {
@@ -1181,10 +1165,6 @@ input[type="checkbox"] {
     background: #fff;
 }
 
-.chart-image {
-    animation: chartFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .chart-download {
     margin-top: 12px;
     justify-self: start;
@@ -1198,38 +1178,6 @@ input[type="checkbox"] {
     justify-content: center;
     height: 100%;
     color: #939ba5;
-}
-
-.skeleton-pulse {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #e9ebee;
-    animation: skeletonPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.skeleton-pulse:nth-child(2) {
-    width: 100px;
-    height: 6px;
-    border-radius: 3px;
-    animation-delay: 0.2s;
-}
-
-.skeleton-pulse:nth-child(3) {
-    width: 140px;
-    height: 6px;
-    border-radius: 3px;
-    animation-delay: 0.4s;
-}
-
-@keyframes chartFadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes skeletonPulse {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
 }
 
 .chart-image.chart-histogram { border-color: #6358e8; box-shadow: 0 0 20px rgba(99, 88, 232, 0.2); }
@@ -1289,13 +1237,10 @@ input[type="checkbox"] {
     font-weight: 600;
     color: #fff;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     min-width: 260px;
     max-width: 400px;
     pointer-events: auto;
-    animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1), toastFadeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) 2.7s forwards;
 }
 
 .toast.error {
@@ -1337,24 +1282,6 @@ input[type="checkbox"] {
 
 .toast-close:hover {
     color: #fff;
-}
-
-@keyframes toastSlideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes toastFadeOut {
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
 }
 
 .crosstab-table-container {
@@ -1952,7 +1879,6 @@ input[type="checkbox"] {
 
 .guide-toggle-icon {
     font-size: 10px;
-    transition: transform .2s ease;
 }
 
 .guide-toggle-sub {
@@ -1978,11 +1904,9 @@ input[type="checkbox"] {
     border-radius: 8px;
     background: #fff;
     cursor: default;
-    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 
 .guide-card:hover {
-    transform: translateY(-2px);
     border-color: #d8dbe0;
     box-shadow: 0 6px 18px rgba(34, 40, 54, 0.06);
 }
@@ -2067,7 +1991,6 @@ input[type="checkbox"] {
     --shadow-neon: 0 0 20px rgba(0, 255, 255, 0.35);
     --glass-bg: rgba(17, 24, 39, 0.8);
     --glass-border: rgba(255, 255, 255, 0.15);
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html {
@@ -2085,7 +2008,6 @@ body {
 .sidebar {
     background: rgba(13, 18, 32, 0.96);
     border-right-color: var(--line);
-    backdrop-filter: blur(16px);
 }
 
 .brand {
@@ -2157,7 +2079,6 @@ body {
 .topbar {
     border-bottom-color: var(--line);
     background: rgba(11, 16, 32, 0.82);
-    backdrop-filter: blur(14px);
 }
 
 .breadcrumb strong {
@@ -2212,8 +2133,6 @@ body {
     border-color: var(--line);
     background: linear-gradient(145deg, rgba(17, 24, 39, 0.98), rgba(14, 21, 38, 0.98));
     box-shadow: var(--shadow);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -2323,7 +2242,6 @@ body {
 
 .button-primary:not(:disabled):hover {
     box-shadow: 0 0 25px rgba(139, 124, 246, 0.55);
-    transform: translateY(-1px);
 }
 
 .button-secondary {
@@ -2466,7 +2384,6 @@ input[type="checkbox"] {
 .crosstab-table-container:hover,
 .chart-guide:hover,
 .column-type-group:hover {
-    transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -2658,7 +2575,6 @@ input[type="checkbox"] {
     --shadow-neon: 0 0 25px rgba(0, 255, 255, 0.45);
     --glass-bg: rgba(13, 13, 13, 0.85);
     --glass-border: rgba(0, 255, 255, 0.35);
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-family: "JetBrains Mono", "Fira Code", "Cascadia Mono", Consolas, monospace;
 }
 
@@ -2673,18 +2589,6 @@ body {
         repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0, 255, 0, 0.035) 2px, rgba(0, 255, 0, 0.035) 4px),
         radial-gradient(circle at 86% 10%, rgba(255, 0, 255, 0.08), transparent 24rem),
         radial-gradient(circle at 12% 82%, rgba(0, 255, 255, 0.07), transparent 28rem);
-}
-
-body::before {
-    position: fixed;
-    z-index: 20;
-    inset: 0;
-    pointer-events: none;
-    content: "";
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 255, 0.025) 50%, transparent 100%);
-    background-size: 100% 5px;
-    animation: cp-scan 8s linear infinite;
-    mix-blend-mode: screen;
 }
 
 ::selection {
@@ -2757,7 +2661,6 @@ h2,
     border-radius: 1px;
     background: var(--cp-green);
     box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.12), 0 0 12px var(--cp-green);
-    animation: cp-pulse 1.8s steps(2) infinite;
 }
 
 .action-log-panel,
@@ -2798,7 +2701,6 @@ h2,
 .topbar {
     border-bottom: 1px solid rgba(0, 255, 255, 0.18);
     background: rgba(13, 13, 13, 0.88);
-    backdrop-filter: blur(12px);
 }
 
 .breadcrumb,
@@ -2845,11 +2747,6 @@ h2 {
     letter-spacing: -0.25px;
 }
 
-h1:hover,
-.brand:hover {
-    animation: cp-glitch 0.28s steps(2) infinite;
-}
-
 .live-dot {
     border-radius: 0;
     background: var(--cp-green);
@@ -2871,8 +2768,6 @@ h1:hover,
         linear-gradient(135deg, rgba(0, 255, 255, 0.025), transparent 35%),
         linear-gradient(145deg, rgba(17, 19, 19, 0.98), rgba(13, 13, 13, 0.98));
     box-shadow: var(--shadow), inset 0 0 20px rgba(0, 255, 0, 0.015);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(0, 255, 255, 0.45);
     border-left: 1px solid rgba(0, 255, 255, 0.45);
 }
@@ -2886,7 +2781,6 @@ h1:hover,
 .crosstab-table-container:hover,
 .chart-guide:hover,
 .column-type-group:hover {
-    transform: translateY(-2px);
     box-shadow: 0 0 30px rgba(0, 255, 255, 0.25), inset 0 0 20px rgba(0, 255, 0, 0.03);
 }
 
@@ -2918,7 +2812,6 @@ h1:hover,
     background: var(--cp-green);
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.38);
     text-transform: uppercase;
-    transition: var(--transition);
 }
 
 .file-picker:hover,
@@ -2926,7 +2819,6 @@ h1:hover,
     border-color: var(--cp-cyan);
     background: var(--cp-cyan);
     box-shadow: 0 0 30px rgba(0, 255, 255, 0.55);
-    transform: translateY(-1px);
 }
 
 .file-picker:hover,
@@ -3322,30 +3214,173 @@ input[type="checkbox"] {
     box-shadow: 0 0 8px rgba(0, 255, 255, 0.65);
 }
 
-@keyframes cp-glitch {
-    0%, 100% {
-        text-shadow: -2px 0 var(--cp-magenta), 2px 0 var(--cp-cyan);
+.chart-heading {
+    align-items: center;
+}
+
+.report-dialog {
+    width: min(760px, calc(100vw - 32px));
+    max-width: none;
+    max-height: 90vh;
+    padding: 0;
+    overflow: auto;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 8px;
+    color: #e7edf4;
+    background: #10151b;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.report-dialog::backdrop {
+    background: rgba(3, 6, 10, 0.78);
+}
+
+.report-form {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+}
+
+.report-dialog-heading,
+.report-form-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.report-dialog-heading h2 {
+    margin: 6px 0;
+    color: #fff;
+}
+
+.report-dialog-heading p,
+.report-chart-empty {
+    margin: 0;
+    color: var(--muted);
+}
+
+.report-field {
+    display: grid;
+    gap: 7px;
+}
+
+.report-field > span,
+.report-charts-field legend {
+    color: #b7c4d2;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+}
+
+.report-field em,
+.report-charts-field em {
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 0.65rem;
+    font-style: normal;
+}
+
+.report-field input,
+.report-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(169, 181, 196, 0.24);
+    border-radius: 4px;
+    color: #e7edf4;
+    background: #0b0f14;
+    font: inherit;
+}
+
+.report-field textarea {
+    resize: vertical;
+}
+
+.report-field input:focus,
+.report-field textarea:focus {
+    border-color: var(--cp-cyan);
+    outline: 2px solid rgba(0, 255, 255, 0.14);
+}
+
+.report-charts-field {
+    min-width: 0;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid rgba(169, 181, 196, 0.2);
+}
+
+.report-chart-list {
+    display: grid;
+    gap: 10px;
+    max-height: 340px;
+    margin-top: 10px;
+    overflow-y: auto;
+}
+
+.report-chart-item {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.5fr);
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid rgba(169, 181, 196, 0.16);
+    border-radius: 4px;
+}
+
+.report-chart-preview {
+    width: 100%;
+    max-height: 140px;
+    align-self: start;
+    object-fit: contain;
+    background: #0b0f14;
+}
+
+.report-chart-fields {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+}
+
+.report-chart-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e7edf4;
+    font-weight: 600;
+}
+
+.report-chart-select input {
+    accent-color: var(--cp-cyan);
+}
+
+.report-chart-empty {
+    padding: 10px 0;
+}
+
+.report-error {
+    margin: 0;
+    color: #ff8e9b;
+}
+
+.report-form-actions {
+    justify-content: flex-end;
+    align-items: center;
+}
+
+@media (max-width: 600px) {
+    .chart-heading {
+        align-items: flex-start;
+        flex-direction: column;
     }
-    50% {
-        text-shadow: 2px 0 var(--cp-magenta), -2px 0 var(--cp-cyan);
+
+    .report-form {
+        padding: 18px;
     }
-}
 
-@keyframes cp-pulse {
-    0%, 100% { opacity: 0.72; }
-    50% { opacity: 1; }
-}
+    .report-chart-item {
+        grid-template-columns: 1fr;
+    }
 
-@keyframes cp-scan {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(100%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    body::before,
-    h1:hover,
-    .brand:hover,
-    .step.active .step-dot {
-        animation: none;
+    .report-chart-preview {
+        max-height: 180px;
     }
 }

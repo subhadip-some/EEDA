@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, render_template, request, send_file
 from .core import (
     _invalidate_column_cache,
     _invalidate_stats_cache,
+    chart_history,
     datasets,
     error_response,
     find_dataset,
@@ -60,6 +61,7 @@ def upload_csv():
     dataset_id = uuid.uuid4().hex
     datasets[dataset_id] = frame
     undo_stacks[dataset_id] = []
+    chart_history[dataset_id] = []
     original_files[dataset_id] = (uploaded_file.filename, raw)
     _invalidate_column_cache(dataset_id)
     _invalidate_stats_cache(dataset_id)

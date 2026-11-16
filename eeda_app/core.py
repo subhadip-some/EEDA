@@ -13,6 +13,8 @@ undo_stacks = {}
 
 original_files = {}
 
+chart_history = {}
+
 _column_cache = {}   # dataset_id -> precomputed column classifications + statistics
 
 IDENTIFIER_KEYWORDS = (
