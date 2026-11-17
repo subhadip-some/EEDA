@@ -13,6 +13,7 @@ const state = {
     actions: [],
     charts: [],
     datasetName: "",
+    plan: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -892,6 +893,13 @@ async function uploadFile(file) {
         updateChartControls();
         setStep("clean");
         $("#chart-result").innerHTML = '<div class="chart-empty"><div class="chart-empty-icon" aria-hidden="true">⌁</div><strong>Your next insight starts here</strong><span>Pick a chart and create a visualization.</span></div>';
+        const planSidebar = $("#planning-sidebar");
+        if (planSidebar) {
+            planSidebar.hidden = false;
+            planSidebar.classList.add("visible");
+            document.body.classList.add("sidebar-open");
+        }
+        fetchPlan();
         trackAction(`Uploaded ${file.name} — ${formatNumber(data.row_count)} rows, ${formatNumber(data.column_count)} columns`, "info");
         toast(`Loaded ${formatNumber(data.row_count)} rows and ${formatNumber(data.column_count)} columns.`, "success");
     } catch (error) {
@@ -1128,6 +1136,191 @@ function renderReportCharts() {
         item.append(image, fields);
         list.append(item);
     });
+}
+
+function renderPlan(plan) {
+    const list = $("#plan-list");
+    const progressValue = $("#plan-progress-value");
+    const progressFill = $("#plan-progress-fill");
+    if (!list || !progressValue || !progressFill) return;
+
+    list.replaceChildren();
+    const items = plan.items ?? [];
+    const done = items.filter((item) => item.done).length;
+    const percent = items.length ? Math.round((done / items.length) * 100) : 0;
+
+    progressValue.textContent = `${percent}%`;
+    progressFill.style.width = `${percent}%`;
+
+    if (items.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "plan-empty";
+        empty.textContent = "No plan items yet. Generate recommendations or add your own step below.";
+        list.append(empty);
+        return;
+    }
+
+    items.forEach((item) => {
+        const entry = document.createElement("div");
+        entry.className = `plan-item ${item.done ? "plan-done" : ""}`;
+        entry.style.cursor = "pointer";
+        entry.title = item.done ? "Mark as not done" : "Mark as done";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "plan-checkbox";
+        checkbox.checked = item.done;
+        checkbox.addEventListener("change", (event) => {
+            event.stopPropagation();
+            togglePlanItem(item.id);
+        });
+
+        const kindBadge = document.createElement("span");
+        kindBadge.className = `plan-kind ${item.kind}`;
+        kindBadge.textContent = item.kind === "recommendation" ? "recommended" : "custom";
+
+        const text = document.createElement("span");
+        text.className = "plan-text";
+        text.textContent = item.text;
+        if (item.done) text.style.textDecoration = "line-through";
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "button button-subtle plan-delete";
+        deleteBtn.textContent = "✕";
+        deleteBtn.setAttribute("aria-label", `Delete ${item.text}`);
+        deleteBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deletePlanItem(item.id);
+        });
+
+        entry.append(checkbox, kindBadge, text, deleteBtn);
+        entry.addEventListener("click", () => navigateToPlanItem(item.text));
+        list.append(entry);
+    });
+}
+
+async function fetchPlan() {
+    try {
+        if (!state.datasetId) {
+            console.warn("fetchPlan: no datasetId, skipping");
+            return;
+        }
+        console.log("fetchPlan: fetching plan for dataset", state.datasetId);
+        state.plan = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`);
+        console.log("fetchPlan: plan fetched", state.plan);
+        renderPlan(state.plan);
+    } catch (error) {
+        console.error("fetchPlan error:", error);
+        showMessage(error.message || "Failed to load plan.", "error");
+    }
+}
+
+async function addPlanItem(text, kind = "custom") {
+    try {
+        if (!state.datasetId) {
+            showMessage("Please upload a CSV dataset before adding plan steps.", "error");
+            toast("Upload a dataset first to add EDA plan steps.", "error");
+            return;
+        }
+        console.log("addPlanItem: adding", text, kind);
+        const result = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text, kind }),
+        });
+        console.log("addPlanItem: result", result);
+        state.plan = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`);
+        renderPlan(state.plan);
+        toast("Plan step added.", "success");
+        return result.item;
+    } catch (error) {
+        console.error("addPlanItem error:", error);
+        showMessage(error.message || "Failed to add plan step.", "error");
+    }
+}
+
+async function togglePlanItem(itemId) {
+    try {
+        if (!state.datasetId) return;
+        console.log("togglePlanItem: toggling", itemId);
+        await api(`/api/planning/${encodeURIComponent(state.datasetId)}/items/${encodeURIComponent(itemId)}/toggle`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        });
+        state.plan = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`);
+        renderPlan(state.plan);
+    } catch (error) {
+        console.error("togglePlanItem error:", error);
+        showMessage(error.message || "Failed to toggle plan step.", "error");
+    }
+}
+
+async function deletePlanItem(itemId) {
+    try {
+        if (!state.datasetId) return;
+        console.log("deletePlanItem: deleting", itemId);
+        await api(`/api/planning/${encodeURIComponent(state.datasetId)}/items/${encodeURIComponent(itemId)}`, {
+            method: "DELETE",
+        });
+        state.plan = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`);
+        renderPlan(state.plan);
+        toast("Plan step removed.", "info");
+    } catch (error) {
+        console.error("deletePlanItem error:", error);
+        showMessage(error.message || "Failed to remove plan step.", "error");
+    }
+}
+
+async function generatePlanRecommendations() {
+    try {
+        if (!state.datasetId) {
+            showMessage("Please upload a CSV dataset before generating plan recommendations.", "error");
+            toast("Upload a dataset first to generate EDA plan recommendations.", "error");
+            return;
+        }
+        console.log("generatePlanRecommendations: generating for dataset", state.datasetId);
+        const button = $("#generate-plan-recommendations");
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Generating…";
+        }
+        const result = await api(`/api/planning/${encodeURIComponent(state.datasetId)}/recommendations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        });
+        console.log("generatePlanRecommendations: result", result);
+        state.plan = await api(`/api/planning/${encodeURIComponent(state.datasetId)}`);
+        renderPlan(state.plan);
+        toast(`${result.added.length} recommendation${result.added.length === 1 ? "" : "s"} added to your plan.`, "success");
+    } catch (error) {
+        console.error("generatePlanRecommendations error:", error);
+        showMessage(error.message || "Failed to generate recommendations.", "error");
+    } finally {
+        const button = $("#generate-plan-recommendations");
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Generate recommendations";
+        }
+    }
+}
+
+function navigateToPlanItem(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes("missing values")) {
+        $("#missing-column").focus();
+        toast("Open the Handle missing values card to complete this step.", "info");
+    } else if (lower.includes("outliers")) {
+        $("#outlier-column").focus();
+        toast("Open the Outlier detection card to complete this step.", "info");
+    } else if (lower.includes("encode categorical")) {
+        $("#onehot-columns").focus();
+        toast("Open the Encode categorical columns card to complete this step.", "info");
+    } else if (lower.includes("distribution charts") || lower.includes("correlations")) {
+        $("#chart-panel").scrollIntoView({ behavior: "smooth" });
+        toast("Go to the visualization panel to create charts.", "info");
+    } else {
+        toast("Plan step noted. Complete it in the matching panel above.", "info");
+    }
 }
 
 function openReportDialog() {
@@ -1368,3 +1561,121 @@ $("#guide-toggle").addEventListener("click", () => {
     const button = $("#guide-toggle");
     button.setAttribute("aria-expanded", String(!isHidden));
 });
+
+// Attach planning sidebar event listeners (robust, runs after DOM ready)
+function attachPlanningListeners() {
+    console.log("[EEDA Plan] Attaching planning listeners...");
+    try {
+        const genRecBtn = $("#generate-plan-recommendations");
+        if (genRecBtn) {
+            genRecBtn.addEventListener("click", (e) => {
+                console.log("[EEDA Plan] Generate recommendations clicked");
+                generatePlanRecommendations();
+            });
+            console.log("[EEDA Plan] Generate recommendations listener attached");
+        } else {
+            console.warn("[EEDA Plan] Generate recommendations button not found!");
+        }
+        const addPlanBtn = $("#add-plan-item");
+        if (addPlanBtn) {
+            addPlanBtn.addEventListener("click", (e) => {
+                console.log("[EEDA Plan] Add step clicked");
+                const input = $("#plan-new-item");
+                const text = input.value.trim();
+                if (!text) {
+                    showMessage("Please enter a step description.", "error");
+                    return;
+                }
+                addPlanItem(text, "custom");
+                input.value = "";
+            });
+            console.log("[EEDA Plan] Add step listener attached");
+        } else {
+            console.warn("[EEDA Plan] Add step button not found!");
+        }
+        const planInput = $("#plan-new-item");
+        if (planInput) {
+            planInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    const input = $("#plan-new-item");
+                    const text = input.value.trim();
+                    if (!text) {
+                        showMessage("Please enter a step description.", "error");
+                        return;
+                    }
+                    addPlanItem(text, "custom");
+                    input.value = "";
+                }
+            });
+            console.log("[EEDA Plan] Plan input Enter listener attached");
+        } else {
+            console.warn("[EEDA Plan] Plan input not found!");
+        }
+    } catch (error) {
+        console.error("[EEDA Plan] Failed to attach planning listeners:", error);
+    }
+    console.log("[EEDA Plan] Listener attachment complete");
+}
+
+// Run after DOM is fully ready
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", attachPlanningListeners);
+} else {
+    attachPlanningListeners();
+}
+
+// Global error handler for debugging
+window.addEventListener("error", (event) => {
+    console.error("[EEDA Plan] Global JS error:", event.message, "at", event.filename, ":", event.lineno);
+});
+
+function togglePlanningSidebar() {
+    console.log("[EEDA Plan] Toggle sidebar clicked");
+    const sidebar = $("#planning-sidebar");
+    if (!sidebar) {
+        console.error("[EEDA Plan] Sidebar element not found!");
+        return;
+    }
+    const isOpen = sidebar.classList.contains("visible");
+    if (isOpen) {
+        closePlanningSidebar();
+    } else {
+        sidebar.hidden = false;
+        sidebar.classList.add("visible");
+        document.body.classList.add("sidebar-open");
+        fetchPlan();
+    }
+}
+
+function closePlanningSidebar() {
+    const sidebar = $("#planning-sidebar");
+    if (!sidebar) return;
+    sidebar.classList.remove("visible");
+    sidebar.hidden = true;
+    document.body.classList.remove("sidebar-open");
+}
+
+// Click outside backdrop to close
+document.addEventListener("click", (event) => {
+    const sidebar = $("#planning-sidebar");
+    const toggle = $("#toggle-planning-sidebar");
+    if (!sidebar || sidebar.hidden) return;
+    if (!sidebar.contains(event.target) && !toggle.contains(event.target)) {
+        closePlanningSidebar();
+    }
+});
+
+// Escape key to close
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        const sidebar = $("#planning-sidebar");
+        if (sidebar && !sidebar.hidden && sidebar.classList.contains("visible")) {
+            closePlanningSidebar();
+        }
+    }
+});
+
+$("#toggle-planning-sidebar").addEventListener("click", togglePlanningSidebar);
+$("#close-planning-sidebar").addEventListener("click", closePlanningSidebar);
+

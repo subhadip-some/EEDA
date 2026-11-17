@@ -15,6 +15,7 @@ from .core import (
     original_files,
     undo_stacks,
 )
+from .planning import plans
 
 
 blueprint = Blueprint("datasets", __name__)
@@ -62,6 +63,7 @@ def upload_csv():
     datasets[dataset_id] = frame
     undo_stacks[dataset_id] = []
     chart_history[dataset_id] = []
+    plans.pop(dataset_id, None)
     original_files[dataset_id] = (uploaded_file.filename, raw)
     _invalidate_column_cache(dataset_id)
     _invalidate_stats_cache(dataset_id)

@@ -6,6 +6,7 @@ from .analysis import blueprint as analysis_blueprint
 from .charts import blueprint as charts_blueprint
 from .datasets import blueprint as datasets_blueprint
 from .edits import blueprint as edits_blueprint
+from .planning import blueprint as planning_blueprint
 from .reports import blueprint as reports_blueprint
 
 
@@ -21,5 +22,6 @@ def create_app():
     app.register_blueprint(edits_blueprint)
     app.register_blueprint(analysis_blueprint)
     app.register_blueprint(charts_blueprint)
+    app.register_blueprint(planning_blueprint)
     app.register_blueprint(reports_blueprint)
     return app
