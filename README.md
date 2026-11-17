@@ -17,7 +17,7 @@ The goal is simple: spend less time writing analysis code and more time understa
 - **Column classification:** Detect identifier-like, continuous, discrete, and categorical fields.
 - **Data preparation:** Filter columns, handle missing values, and apply encoding options.
 - **Action tracking:** Undo edits, compare states, and reset the working dataset.
-- **Visualization tools:** Generate histograms, KDE plots, violin plots, box plots, count plots, scatter plots, line charts, and correlation heatmaps.
+- **Visualization tools:** Generate histograms, KDE plots, violin plots, box plots, count plots, scatter plots, stacked and grouped bar plots, strip plots, bar plots, line charts, and correlation heatmaps.
 - **Outlier handling:** Detect and treat outliers using common statistical methods.
 - **Export:** Download the processed dataset as a CSV file or generate a PDF EDA report with dataset statistics, cleaning history, and selected charts.
 
@@ -128,6 +128,10 @@ EEDA/
 | Relationship Chart  | Investigate how two variables change together           |
 | Line Graph          | Examine changes in numerical variables over time        |
 | Correlation Heatmap | Compare pairwise correlations between numerical columns |
+| Stacked Bar Plot   | Compare counts for two categorical columns with groups stacked |
+| Grouped Bar Plot   | Compare counts for two categorical columns with side-by-side groups |
+| Strip Plot         | Show individual numeric observations across categories |
+| Bar Plot           | Compare the mean numeric value across categories |
 
 Charts are exploratory aids. Correlation does not imply causation, and visual patterns should always be interpreted in context.
 

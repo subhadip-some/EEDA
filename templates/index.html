@@ -342,6 +342,10 @@
                   <option value="relationship">Relationship (two variables together)</option>
                   <option value="heatmap">Correlation heatmap</option>
                   <option value="crosstab">Cross-tabulation</option>
+                  <option value="stacked_bar">Stacked bar plot (2 categorical)</option>
+                  <option value="grouped_bar">Grouped bar plot (2 categorical)</option>
+                  <option value="strip">Strip plot (numeric by categorical)</option>
+                  <option value="bar">Bar plot (mean by categorical)</option>
                   <option value="line">Line graph (two variables over time)</option>
                 </select>
               </label>
@@ -507,6 +511,54 @@
                     <div class="guide-card-meta">
                       <span class="guide-chip">Works with: 2 categorical</span>
                       <span class="guide-chip">Best for: categories</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card crosstab">
+                  <div class="guide-card-icon">📊</div>
+                  <div class="guide-card-body">
+                    <strong>Stacked bar plot</strong>
+                    <span class="guide-card-desc">Compares counts for two categorical columns, with each group stacked within its category.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: 2 categorical</span>
+                      <span class="guide-chip">Best for: composition</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card crosstab">
+                  <div class="guide-card-icon">▥</div>
+                  <div class="guide-card-body">
+                    <strong>Grouped bar plot</strong>
+                    <span class="guide-card-desc">Compares counts for two categorical columns using side-by-side bars for each group.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: 2 categorical</span>
+                      <span class="guide-chip">Best for: category comparison</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card box">
+                  <div class="guide-card-icon">◉</div>
+                  <div class="guide-card-body">
+                    <strong>Strip plot</strong>
+                    <span class="guide-card-desc">Shows individual numeric observations across categories, with jitter to reveal overlapping values.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: numeric + categorical</span>
+                      <span class="guide-chip">Best for: individual values</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="guide-card count">
+                  <div class="guide-card-icon">▤</div>
+                  <div class="guide-card-body">
+                    <strong>Bar plot</strong>
+                    <span class="guide-card-desc">Compares the mean of a numeric column across categories.</span>
+                    <div class="guide-card-meta">
+                      <span class="guide-chip">Works with: numeric + categorical</span>
+                      <span class="guide-chip">Best for: mean comparison</span>
                     </div>
                   </div>
                 </article>

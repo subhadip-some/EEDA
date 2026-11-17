@@ -12,7 +12,13 @@ import pandas as pd
 import seaborn as sns
 from flask import Blueprint, jsonify, request
 
-from .core import chart_history, detect_identifier_columns, error_response, find_dataset
+from .core import (
+    chart_history,
+    detect_categorical_columns,
+    detect_identifier_columns,
+    error_response,
+    find_dataset,
+)
 
 plt.style.use("dark_background")
 sns.set_theme(style="darkgrid", rc={
@@ -28,6 +34,18 @@ sns.set_theme(style="darkgrid", rc={
 })
 
 blueprint = Blueprint("charts", __name__)
+
+
+def _category_labels(series):
+    return series.map(lambda value: "Missing" if pd.isna(value) else str(value))
+
+
+def _limit_categories(plot_data, column, label, limit=15):
+    counts = plot_data[column].value_counts()
+    if len(counts) <= limit:
+        return plot_data, ""
+    categories = counts.head(limit).index
+    return plot_data[plot_data[column].isin(categories)], f"Showing the {limit} most frequent categories for {label}."
 
 
 def make_chart(frame, data):
@@ -209,8 +227,8 @@ def make_chart(frame, data):
         if col1 == col2:
             raise ValueError("Choose two different columns for cross-tabulation.")
 
-        numeric_columns = frame.select_dtypes(include="number").columns.tolist()
-        if col1 in numeric_columns or col2 in numeric_columns:
+        categorical_columns = set(detect_categorical_columns(frame))
+        if col1 not in categorical_columns or col2 not in categorical_columns:
             raise ValueError("Cross-tabulation requires two categorical columns.")
 
         ct = pd.crosstab(frame[col1], frame[col2])
@@ -241,6 +259,113 @@ def make_chart(frame, data):
         axis.set_ylabel(col1)
         axis.tick_params(axis="x", labelrotation=45)
         axis.tick_params(axis="y", labelrotation=0)
+        figure.tight_layout()
+        return figure, note
+
+    if chart_type in ("stacked_bar", "grouped_bar"):
+        x_column = data.get("x")
+        y_column = data.get("y")
+        if (
+            not isinstance(x_column, str)
+            or not isinstance(y_column, str)
+            or x_column not in frame.columns
+            or y_column not in frame.columns
+        ):
+            raise ValueError("Choose two valid categorical columns for the bar plot.")
+        if x_column == y_column:
+            raise ValueError("Choose two different categorical columns for the bar plot.")
+
+        categorical_columns = set(detect_categorical_columns(frame))
+        if x_column not in categorical_columns or y_column not in categorical_columns:
+            raise ValueError("Stacked and grouped bar plots require two categorical columns.")
+
+        plot_data = pd.DataFrame({
+            "x": _category_labels(frame[x_column]),
+            "y": _category_labels(frame[y_column]),
+        })
+        if plot_data.empty:
+            raise ValueError("These columns have no values to plot.")
+
+        notes = []
+        plot_data, note = _limit_categories(plot_data, "x", x_column)
+        if note:
+            notes.append(note)
+        plot_data, note = _limit_categories(plot_data, "y", y_column)
+        if note:
+            notes.append(note)
+        counts = pd.crosstab(plot_data["x"], plot_data["y"])
+        if counts.empty:
+            raise ValueError("These columns have no values to plot.")
+
+        figure_width = max(8, min(18, counts.shape[0] * 0.9))
+        figure, axis = plt.subplots(figsize=(figure_width, 5))
+        positions = np.arange(len(counts.index))
+        colors = sns.color_palette("viridis", n_colors=len(counts.columns))
+        if chart_type == "stacked_bar":
+            bottom = np.zeros(len(counts.index))
+            for category, color in zip(counts.columns, colors):
+                values = counts[category].to_numpy()
+                axis.bar(positions, values, bottom=bottom, color=color, label=category)
+                bottom += values
+            axis.set_title(f"Stacked counts of {y_column} by {x_column}")
+        else:
+            width = 0.8 / len(counts.columns)
+            for index, (category, color) in enumerate(zip(counts.columns, colors)):
+                offset = (index - (len(counts.columns) - 1) / 2) * width
+                axis.bar(positions + offset, counts[category].to_numpy(), width=width, color=color, label=category)
+            axis.set_title(f"Grouped counts of {y_column} by {x_column}")
+        axis.set_xticks(positions, counts.index)
+        axis.set_xlabel(x_column)
+        axis.set_ylabel("Count")
+        axis.tick_params(axis="x", labelrotation=45)
+        axis.legend(title=y_column)
+        figure.tight_layout()
+        return figure, " ".join(notes)
+
+    if chart_type in ("strip", "bar"):
+        category_column = data.get("x")
+        numeric_column = data.get("y")
+        if (
+            not isinstance(category_column, str)
+            or not isinstance(numeric_column, str)
+            or category_column not in frame.columns
+            or numeric_column not in frame.columns
+        ):
+            raise ValueError("Choose a valid categorical column and numeric column.")
+        if category_column == numeric_column:
+            raise ValueError("Choose different categorical and numeric columns.")
+
+        categorical_columns = set(detect_categorical_columns(frame))
+        numeric_columns = set(frame.select_dtypes(include="number").columns)
+        if category_column not in categorical_columns or numeric_column not in numeric_columns:
+            raise ValueError("Strip and bar plots require one categorical column and one numeric column.")
+
+        values = pd.to_numeric(frame[numeric_column], errors="coerce")
+        plot_data = pd.DataFrame({
+            "category": _category_labels(frame[category_column]),
+            "value": values,
+        })
+        plot_data = plot_data[np.isfinite(plot_data["value"])]
+        if plot_data.empty:
+            raise ValueError("These columns have no numeric rows in common.")
+
+        plot_data, note = _limit_categories(plot_data, "category", category_column, limit=20)
+        figure_width = max(8, min(18, plot_data["category"].nunique() * 0.8))
+        figure, axis = plt.subplots(figsize=(figure_width, 5))
+        if chart_type == "strip":
+            if len(plot_data) > 10_000:
+                plot_data = plot_data.iloc[np.linspace(0, len(plot_data) - 1, 10_000, dtype=int)]
+                sample_note = "Showing a deterministic sample of 10,000 rows."
+                note = f"{note} {sample_note}".strip()
+            sns.stripplot(data=plot_data, x="category", y="value", jitter=True, alpha=0.65, color="#00FFFF", ax=axis)
+            axis.set_title(f"{numeric_column} by {category_column}")
+        else:
+            means = plot_data.groupby("category", sort=False)["value"].mean()
+            axis.bar(means.index, means.to_numpy(), color="#00FF00")
+            axis.set_title(f"Mean {numeric_column} by {category_column}")
+        axis.set_xlabel(category_column)
+        axis.set_ylabel(numeric_column)
+        axis.tick_params(axis="x", labelrotation=45)
         figure.tight_layout()
         return figure, note
 
@@ -280,8 +405,13 @@ def make_chart(frame, data):
         axis.grid(alpha=0.2)
         figure.tight_layout()
         return figure, ""
+    
+    
 
-    raise ValueError("Choose histogram, violin, count, pie, box, box-all, scatter, relationship, heatmap, crosstab, or line.")
+    raise ValueError(
+        "Choose histogram, violin, count, pie, box, box-all, scatter, relationship, "
+        "heatmap, crosstab, stacked-bar, grouped-bar, strip, bar, or line."
+    )
 
 
 @blueprint.post("/api/plot")
@@ -337,6 +467,10 @@ def _chart_label(data):
         "heatmap": "Correlation heatmap",
         "crosstab": "Cross-tabulation",
         "line": "Line graph",
+        "stacked_bar": "Stacked bar plot",
+        "grouped_bar": "Grouped bar plot",
+        "strip": "Strip plot",
+        "bar": "Bar plot",
     }
     label = labels.get(chart_type, "Chart")
     column = data.get("column")
@@ -345,6 +479,8 @@ def _chart_label(data):
     x_column = data.get("x")
     y_column = data.get("y")
     if isinstance(x_column, str) and isinstance(y_column, str):
+        if data.get("type") == "bar":
+            return f"{label}: {y_column} by {x_column}"
         return f"{label}: {y_column} vs {x_column}"
     column1 = data.get("column1")
     column2 = data.get("column2")

@@ -34,6 +34,7 @@ def quick_guide():
         "Use the Chart guide toggle below the chart controls to see what each chart does.\n"
         "Charts: Histogram + KDE, Violin, Box plot, Count plot, Scatter plot,\n"
         "Relationship chart, Line graph, Correlation heatmap, Cross-tabulation,\n"
+        "Stacked bar, grouped bar, strip plot, and bar plot.\n"
         "Box plot (all numeric).\n",
         200,
         {"Content-Type": "text/plain; charset=utf-8"},

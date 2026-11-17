@@ -775,6 +775,12 @@ function updateChartOptions() {
     if (type === "crosstab") {
         values = state.categoricalColumns.length ? state.categoricalColumns : state.columns;
         pairValues = values;
+    } else if (type === "stacked_bar" || type === "grouped_bar") {
+        values = state.categoricalColumns;
+        pairValues = values;
+    } else if (type === "strip" || type === "bar") {
+        values = state.categoricalColumns;
+        pairValues = state.numericColumns;
     } else if (type === "line") {
         values = state.continuousColumns.length ? state.continuousColumns : state.columns;
         const identifiers = new Set(state.identifierColumns ?? []);
@@ -800,7 +806,7 @@ function updateChartOptions() {
     const fields = [
         { select: primary, key: "primary", values },
     ];
-    if (["scatter", "crosstab", "line", "relationship"].includes(type)) {
+    if (["scatter", "crosstab", "line", "relationship", "stacked_bar", "grouped_bar", "strip", "bar"].includes(type)) {
         fields.push({ select: secondary, key: "secondary", values: pairValues });
     }
     if (type === "line" && tertiary) {
@@ -815,7 +821,7 @@ function updateChartOptions() {
 
         select.replaceChildren();
         fieldValues.forEach((column) => {
-            if ((type === "crosstab" || type === "line" || type === "relationship") && others.includes(column)) return;
+            if ((type === "crosstab" || type === "line" || type === "relationship" || type === "stacked_bar" || type === "grouped_bar") && others.includes(column)) return;
             const option = document.createElement("option");
             option.value = column;
             option.textContent = column;
@@ -845,7 +851,7 @@ function updateChartControls() {
     const chartResult = $("#chart-result");
     const crosstabContainer = $("#crosstab-table-container");
     if (fieldPrimary) fieldPrimary.hidden = type === "heatmap" || type === "box_all";
-    if (fieldSecondary) fieldSecondary.hidden = type !== "scatter" && type !== "crosstab" && type !== "line" && type !== "relationship";
+    if (fieldSecondary) fieldSecondary.hidden = !["scatter", "crosstab", "line", "relationship", "stacked_bar", "grouped_bar", "strip", "bar"].includes(type);
     if (fieldTertiary) fieldTertiary.hidden = type !== "line";
     if (type === "scatter") {
         $("#primary-label").textContent = "X AXIS";
@@ -853,6 +859,12 @@ function updateChartControls() {
     } else if (type === "crosstab") {
         $("#primary-label").textContent = "X AXIS";
         $("#secondary-label").textContent = "Y AXIS";
+    } else if (type === "stacked_bar" || type === "grouped_bar") {
+        $("#primary-label").textContent = "CATEGORY";
+        $("#secondary-label").textContent = "GROUP";
+    } else if (type === "strip" || type === "bar") {
+        $("#primary-label").textContent = "CATEGORY";
+        $("#secondary-label").textContent = "NUMERIC VALUE";
     } else if (type === "relationship") {
         $("#primary-label").textContent = "VARIABLE 1";
         $("#secondary-label").textContent = "VARIABLE 2";
@@ -1007,6 +1019,10 @@ async function createChart() {
         payload.y2 = $("#tertiary-column").value;
     }
     if (type === "relationship") {
+        payload.x = $("#primary-column").value;
+        payload.y = $("#secondary-column").value;
+    }
+    if (["stacked_bar", "grouped_bar", "strip", "bar"].includes(type)) {
         payload.x = $("#primary-column").value;
         payload.y = $("#secondary-column").value;
     }
