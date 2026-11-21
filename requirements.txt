@@ -4,3 +4,5 @@ numpy
 pandas
 seaborn
 reportlab
+scipy
+gunicorn

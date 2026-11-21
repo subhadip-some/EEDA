@@ -93,6 +93,20 @@ To stop the app, press `Ctrl + C` in the terminal.
 
 ---
 
+## Render Deployment
+
+The repository includes a `render.yaml` Blueprint. In Render, choose **New > Blueprint**, connect this repository, and deploy the `eeda` web service.
+
+Render will run:
+
+```text
+gunicorn app:app
+```
+
+The application keeps uploaded datasets and edit history in memory. Restarting or replacing the Render instance will clear all uploaded data. Use one web process for consistent session data, and do not rely on this setup for sensitive or production datasets.
+
+---
+
 ## Project Structure
 
 ```text
